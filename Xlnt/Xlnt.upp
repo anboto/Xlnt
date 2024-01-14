@@ -1,0 +1,16 @@
+description "Xlnt is library for reading/writing XLSX files\377";
+
+uses
+	Core,
+	plugin/Xlnt,
+	plugin/z;
+
+options
+	-DHAVE_ZLIB;
+
+file
+	Xlnt.cpp,
+	Xlnt.h,
+	srcdoc.tpp,
+	Copying;
+

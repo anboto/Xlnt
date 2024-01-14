@@ -1,0 +1,12 @@
+description "Xlnt library demo\377";
+
+uses
+	Core,
+	Xlnt;
+
+file
+	Xlnt_demo_cl.cpp;
+
+mainconfig
+	"" = "";
+

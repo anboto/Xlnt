@@ -8,6 +8,8 @@
 namespace Upp {
 
 String GetCell(int col, int row);
+
+void XlsxFill(xlnt::worksheet &ws, const Grid &g, bool removeEmpty);
 	
 }
 	

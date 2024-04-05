@@ -3,7 +3,8 @@ description "Xlnt is library for reading/writing XLSX files\377";
 uses
 	Core,
 	plugin/Xlnt,
-	plugin/z;
+	plugin/z,
+	Functions4U;
 
 options
 	-DHAVE_ZLIB;

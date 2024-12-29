@@ -4,6 +4,7 @@
 #define _xlnt_h_
 
 #include <plugin/Xlnt/include/xlnt/xlnt.hpp>
+#include <Functions4U/Functions4U.h>
 
 namespace Upp {
 

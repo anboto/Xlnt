@@ -12,6 +12,7 @@ CONSOLE_APP_MAIN
 	StdLogSetup(LOG_COUT|LOG_FILE);
 	
 	try {
+		String file = AppendFileName(GetExeFolder(), "output.xlsx");
 		{	// Creating and saving
 			Vector<Vector<double>> data;
 		    for (int r = 0; r < 100; r++) {
@@ -37,11 +38,11 @@ CONSOLE_APP_MAIN
 				    ws.cell(xlnt::cell_reference(c + 1, r + 2)).value(row[c]);
 		        ws.cell(xlnt::cell_reference(row.size() + 1, r + 2)).formula(~Format("=SUM(%s:%s)", GetCell(1, r+2), GetCell(row.size(), r+2)));
 		    }
-		    wb.save("output.xlsx"); 
+		    wb.save(~file); 
 		}
 		{	// Loading
 		    xlnt::workbook wb;
-    		wb.load("output.xlsx");
+    		wb.load(~file);
     		xlnt::worksheet ws = wb.active_sheet();
     		for (auto row : ws.rows(false)) 
         		for (auto cell : row) {

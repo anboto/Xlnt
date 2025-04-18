@@ -1,4 +1,4 @@
-description "Xlnt is library for reading/writing XLSX files\377";
+description "Xlnt is library for reading/writing XLSX files\377B44,169,203";
 
 uses
 	Core,

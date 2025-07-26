@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +25,6 @@
 
 #pragma once
 
-#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -543,12 +543,12 @@ public:
     /// <summary>
     /// Returns the workbook of the worksheet that owns this cell.
     /// </summary>
-    class workbook &workbook();
+    class workbook workbook();
 
     /// <summary>
     /// Returns the workbook of the worksheet that owns this cell.
     /// </summary>
-    const class workbook &workbook() const;
+    const class workbook workbook() const;
 
     /// <summary>
     /// Returns the base date of the parent workbook.
@@ -565,7 +565,7 @@ public:
     /// <summary>
     /// Returns true if this cell has a comment applied.
     /// </summary>
-    bool has_comment();
+    bool has_comment() const;
 
     /// <summary>
     /// Deletes the comment applied to this cell if it exists.
@@ -575,7 +575,7 @@ public:
     /// <summary>
     /// Gets the comment applied to this cell.
     /// </summary>
-    class comment comment();
+    class comment comment() const;
 
     /// <summary>
     /// Creates a new comment with the given text and optional author and
@@ -606,6 +606,15 @@ public:
     /// Returns the height of this cell in pixels.
     /// </summary>
     double height() const;
+
+    // comparisons
+
+    /// <summary>
+    /// Returns true if this cell is equal to other. If compare_by_reference is true, the comparison
+    /// will only check that both cells point to the same internal cell. Otherwise,
+    /// if compare_by_reference is false, all cell properties except the row and column are compared.
+    /// </summary>
+    bool compare(const cell &other, bool compare_by_reference) const;
 
     // operators
 
@@ -651,7 +660,7 @@ private:
     /// <summary>
     /// A pointer to this cell's implementation.
     /// </summary>
-    detail::cell_impl *d_;
+    detail::cell_impl *d_ = nullptr;
 };
 
 /// <summary>
@@ -665,48 +674,58 @@ XLNT_API bool operator==(std::nullptr_t, const cell &cell);
 XLNT_API bool operator==(const cell &cell, std::nullptr_t);
 
 /// <summary>
+/// Returns true if this cell is initialized.
+/// </summary>
+XLNT_API bool operator!=(std::nullptr_t, const cell &cell);
+
+/// <summary>
+/// Returns true if this cell is initialized.
+/// </summary>
+XLNT_API bool operator!=(const cell &cell, std::nullptr_t);
+
+/// <summary>
 /// Convenience function for writing cell to an ostream.
 /// Uses cell::to_string() internally.
 /// </summary>
 XLNT_API std::ostream &operator<<(std::ostream &stream, const xlnt::cell &cell);
 
 template <>
-bool cell::value<bool>() const;
+XLNT_API bool cell::value<bool>() const;
 
 template <>
-int cell::value<int>() const;
+XLNT_API int cell::value<int>() const;
 
 template <>
-unsigned int cell::value<unsigned int>() const;
+XLNT_API unsigned int cell::value<unsigned int>() const;
 
 template <>
-long long int cell::value<long long int>() const;
+XLNT_API long long int cell::value<long long int>() const;
 
 template <>
-unsigned long long cell::value<unsigned long long int>() const;
+XLNT_API unsigned long long cell::value<unsigned long long int>() const;
 
 template <>
-float cell::value<float>() const;
+XLNT_API float cell::value<float>() const;
 
 template <>
-double cell::value<double>() const;
+XLNT_API double cell::value<double>() const;
 
 template <>
-date cell::value<date>() const;
+XLNT_API date cell::value<date>() const;
 
 template <>
-time cell::value<time>() const;
+XLNT_API time cell::value<time>() const;
 
 template <>
-datetime cell::value<datetime>() const;
+XLNT_API datetime cell::value<datetime>() const;
 
 template <>
-timedelta cell::value<timedelta>() const;
+XLNT_API timedelta cell::value<timedelta>() const;
 
 template <>
-std::string cell::value<std::string>() const;
+XLNT_API std::string cell::value<std::string>() const;
 
 template <>
-rich_text cell::value<rich_text>() const;
+XLNT_API rich_text cell::value<rich_text>() const;
 
 } // namespace xlnt

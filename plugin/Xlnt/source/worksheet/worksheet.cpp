@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +25,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
 #include <xlnt/cell/cell.hpp>
 #include <xlnt/cell/cell_reference.hpp>
@@ -189,14 +189,14 @@ page_setup worksheet::page_setup() const
     return d_->page_setup_.get();
 }
 
-workbook &worksheet::workbook()
+workbook worksheet::workbook()
 {
-    return *d_->parent_;
+    return d_->parent_;
 }
 
-const workbook &worksheet::workbook() const
+const workbook worksheet::workbook() const
 {
-    return *d_->parent_;
+    return d_->parent_;
 }
 
 void worksheet::garbage_collect()
@@ -397,7 +397,12 @@ cell worksheet::cell(const cell_reference &reference)
 
 const cell worksheet::cell(const cell_reference &reference) const
 {
-    return xlnt::cell(&d_->cell_map_.at(reference));
+    const auto match = d_->cell_map_.find(reference);
+    if (match == d_->cell_map_.end())
+    {
+        throw xlnt::invalid_parameter("Requested cell doesn't exist.");
+    }
+    return xlnt::cell(&match->second);
 }
 
 cell worksheet::cell(xlnt::column_t column, row_t row)
@@ -577,7 +582,7 @@ column_t worksheet::highest_column_or_props() const
     return highest;
 }
 
-range_reference worksheet::calculate_dimension(bool skip_null) const
+range_reference worksheet::calculate_dimension(bool skip_null, bool skip_row_props) const
 {
     // partially optimised version of:
     // return range_reference(lowest_column(), lowest_row_or_props(),
@@ -593,12 +598,15 @@ range_reference worksheet::calculate_dimension(bool skip_null) const
     // in order to include first empty rows and columns
     row_t min_row_prop = skip_null? constants::max_row() : constants::min_row();
     row_t max_row_prop = constants::min_row();
-    for (const auto &row_prop : d_->row_properties_)
+    if (!skip_row_props)
     {
-        if(skip_null){
-            min_row_prop = std::min(min_row_prop, row_prop.first);
+        for (const auto &row_prop : d_->row_properties_)
+        {
+            if(skip_null){
+                min_row_prop = std::min(min_row_prop, row_prop.first);
+            }
+            max_row_prop = std::max(max_row_prop, row_prop.first);
         }
-        max_row_prop = std::max(max_row_prop, row_prop.first);
     }
     if (d_->cell_map_.empty())
     {
@@ -724,22 +732,22 @@ row_t worksheet::next_row() const
 
 xlnt::range worksheet::rows(bool skip_null)
 {
-    return xlnt::range(*this, calculate_dimension(skip_null), major_order::row, skip_null);
+    return xlnt::range(*this, calculate_dimension(skip_null, skip_null), major_order::row, skip_null);
 }
 
 const xlnt::range worksheet::rows(bool skip_null) const
 {
-    return xlnt::range(*this, calculate_dimension(skip_null), major_order::row, skip_null);
+    return xlnt::range(*this, calculate_dimension(skip_null, skip_null), major_order::row, skip_null);
 }
 
 xlnt::range worksheet::columns(bool skip_null)
 {
-    return xlnt::range(*this, calculate_dimension(skip_null), major_order::column, skip_null);
+    return xlnt::range(*this, calculate_dimension(skip_null, skip_null), major_order::column, skip_null);
 }
 
 const xlnt::range worksheet::columns(bool skip_null) const
 {
-    return xlnt::range(*this, calculate_dimension(skip_null), major_order::column, skip_null);
+    return xlnt::range(*this, calculate_dimension(skip_null, skip_null), major_order::column, skip_null);
 }
 
 /*
@@ -958,46 +966,16 @@ bool worksheet::operator==(const worksheet &other) const
     return compare(other, true);
 }
 
-bool worksheet::compare(const worksheet &other, bool reference) const
+bool worksheet::compare(const worksheet &other, bool compare_by_reference) const
 {
-    if (reference)
+    if (compare_by_reference)
     {
         return d_ == other.d_;
     }
-
-    if (d_->parent_ != other.d_->parent_) return false;
-
-    for (auto &cell : d_->cell_map_)
+    else
     {
-        if (other.d_->cell_map_.find(cell.first) == other.d_->cell_map_.end())
-        {
-            return false;
-        }
-
-        xlnt::cell this_cell(&cell.second);
-        xlnt::cell other_cell(&other.d_->cell_map_[cell.first]);
-
-        if (this_cell.data_type() != other_cell.data_type())
-        {
-            return false;
-        }
-
-        if (this_cell.data_type() == xlnt::cell::type::number
-            && !detail::float_equals(this_cell.value<double>(), other_cell.value<double>()))
-        {
-            return false;
-        }
+        return *d_ == *other.d_;
     }
-
-    // todo: missing some comparisons
-
-    if (d_->auto_filter_ == other.d_->auto_filter_ && d_->views_ == other.d_->views_
-        && d_->merged_cells_ == other.d_->merged_cells_)
-    {
-        return true;
-    }
-
-    return false;
 }
 
 bool worksheet::operator!=(const worksheet &other) const
@@ -1308,7 +1286,7 @@ void worksheet::garbage_collect_formulae()
 
 void worksheet::parent(xlnt::workbook &wb)
 {
-    d_->parent_ = &wb;
+    d_->parent_ = wb.d_;
 }
 
 conditional_format worksheet::conditional_format(const range_reference &ref, const condition &when)
@@ -1324,7 +1302,8 @@ path worksheet::path() const
 
 relationship worksheet::referring_relationship() const
 {
-    auto &manifest = workbook().manifest();
+    auto wb = workbook();
+    auto &manifest = wb.manifest();
     auto wb_rel = manifest.relationship(xlnt::path("/"),
         relationship_type::office_document);
     auto ws_rel = manifest.relationship(wb_rel.target().path(),
@@ -1350,6 +1329,26 @@ bool worksheet::has_drawing() const
 bool worksheet::is_empty() const
 {
     return d_->cell_map_.empty();
+}
+
+int worksheet::zoom_scale() const
+{
+    if (!has_view())
+    {
+        return 100;
+    }
+    
+    return view(0).zoom_scale();
+}
+
+void worksheet::zoom_scale(int scale)
+{
+    if (!has_view())
+    {
+        sheet_view sv;
+        add_view(sv);
+    }
+    view(0).zoom_scale(scale);
 }
 
 } // namespace xlnt

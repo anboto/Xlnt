@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +22,6 @@
 // @license: http://www.opensource.org/licenses/mit-license.php
 // @author: see AUTHORS file
 
-#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -38,6 +38,7 @@
 #include <detail/serialization/vector_streambuf.hpp>
 #include <detail/serialization/xlsx_consumer.hpp>
 #include <detail/unicode.hpp>
+#include <detail/utils/string_helpers.hpp>
 
 namespace {
 
@@ -334,12 +335,20 @@ std::vector<std::uint8_t> decrypt_xlsx(
 namespace xlnt {
 namespace detail {
 
-std::vector<std::uint8_t> XLNT_API decrypt_xlsx(const std::vector<std::uint8_t> &data, const std::string &password)
+std::vector<std::uint8_t> decrypt_xlsx(const std::vector<std::uint8_t> &data, const std::string &password)
 {
     return ::decrypt_xlsx(data, utf8_to_utf16(password));
 }
 
-void xlsx_consumer::read(std::istream &source, const std::string &password)
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+std::vector<std::uint8_t> decrypt_xlsx(const std::vector<std::uint8_t> &data, std::u8string_view password)
+{
+    return ::decrypt_xlsx(data, utf8_to_utf16(password));
+}
+#endif
+
+template <typename T>
+void xlsx_consumer::read_internal(std::istream &source, const T &password)
 {
     std::vector<std::uint8_t> data((std::istreambuf_iterator<char>(source)), (std::istreambuf_iterator<char>()));
     const auto decrypted = decrypt_xlsx(data, password);
@@ -347,6 +356,18 @@ void xlsx_consumer::read(std::istream &source, const std::string &password)
     std::istream decrypted_stream(&decrypted_buffer);
     read(decrypted_stream);
 }
+
+void xlsx_consumer::read(std::istream &source, const std::string &password)
+{
+    return read_internal(source, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void xlsx_consumer::read(std::istream &source, std::u8string_view password)
+{
+    return read_internal(source, password);
+}
+#endif
 
 } // namespace detail
 } // namespace xlnt

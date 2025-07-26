@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,9 +21,73 @@
 //
 // @license: http://www.opensource.org/licenses/mit-license.php
 // @author: see AUTHORS file
-#include <locale>
 
 #include <xlnt/worksheet/range_reference.hpp>
+
+#include <detail/constants.hpp>
+#include <xlnt/utils/exceptions.hpp>
+#include <detail/serialization/parsers.hpp>
+
+namespace {
+
+bool is_whole_column(const std::string &s)
+{
+    if (s.empty())
+    {
+        return false;
+    }
+
+    size_t start_pos = (s[0] == '$') ? 1 : 0;
+    if (start_pos >= s.length()) // String contains only a "$"
+    {
+        return false;
+    }
+
+    for (size_t i = start_pos; i < s.length(); ++i)
+    {
+        if (!std::isalpha(static_cast<unsigned char>(s[i])))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool is_whole_row(const std::string &s)
+{
+    if (s.empty())
+    {
+        return false;
+    }
+
+    size_t start_pos = (s[0] == '$') ? 1 : 0;
+    if (start_pos >= s.length()) // String contains only a "$"
+    {
+        return false;
+    }
+
+    for (size_t i = start_pos; i < s.length(); ++i)
+    {
+        if (!std::isdigit(static_cast<unsigned char>(s[i])))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool extract_absolute (std::string& part)
+{
+    bool absolute = part[0] == '$';
+    if (absolute)
+    {
+        part.erase(0, 1);
+    }
+    return absolute;
+}
+}
 
 namespace xlnt {
 
@@ -47,27 +112,53 @@ range_reference::range_reference(const char *range_string)
 }
 
 range_reference::range_reference(const std::string &range_string)
-    : top_left_("A1"), bottom_right_("A1")
 {
-    auto colon_index = range_string.find(' ');
+    auto colon_index = range_string.find(':');
 
-    if (colon_index != std::string::npos)
+    if (colon_index == std::string::npos)
     {
-        // Multiple cell selection is not supported at this time.
+        // Single cell reference, e.g., "A1"
+        top_left_ = cell_reference(range_string);
+        bottom_right_ = top_left_;
         return;
     }
 
-    colon_index = range_string.find(':');
+    std::string start_part = range_string.substr(0, colon_index);
+    std::string end_part = range_string.substr(colon_index + 1);
 
-    if (colon_index != std::string::npos)
+    if (is_whole_column(start_part) && is_whole_column(end_part))
     {
-        top_left_ = cell_reference(range_string.substr(0, colon_index));
-        bottom_right_ = cell_reference(range_string.substr(colon_index + 1));
+        // Whole column reference, e.g., "A:C"
+        bool absoluteStart = extract_absolute(start_part);
+        bool absoluteEnd = extract_absolute(end_part);
+
+        top_left_ = cell_reference(start_part, 1).make_absolute(absoluteStart, true);
+        bottom_right_ = cell_reference(end_part, constants::max_row()).make_absolute(absoluteEnd, true);
+    }
+    else if (is_whole_row(start_part) && is_whole_row(end_part))
+    {
+        // Whole row reference, e.g., "1:5"
+        bool absoluteStart = extract_absolute(start_part);
+        bool absoluteEnd = extract_absolute(end_part);
+
+        row_t start_row;
+        if (detail::parse(start_part, start_row) != std::errc())
+        {
+            throw xlnt::invalid_cell_reference(start_part);
+        }
+        row_t end_row;
+        if (detail::parse(end_part, end_row) != std::errc())
+        {
+            throw xlnt::invalid_cell_reference(end_part);
+        }
+
+        top_left_ = cell_reference(constants::min_column(), start_row).make_absolute(true, absoluteStart);
+        bottom_right_ = cell_reference(constants::max_column(), end_row).make_absolute(true, absoluteEnd);
     }
     else
     {
-        top_left_ = cell_reference(range_string);
-        bottom_right_ = cell_reference(range_string);
+        top_left_ = cell_reference(start_part);
+        bottom_right_ = cell_reference(end_part);
     }
 }
 
@@ -92,7 +183,7 @@ range_reference range_reference::make_offset(int column_offset, int row_offset) 
     auto top_left = top_left_.make_offset(column_offset, row_offset);
     auto bottom_right = bottom_right_.make_offset(column_offset, row_offset);
 
-    return top_left, bottom_right; // lol
+    return range_reference(top_left, bottom_right);
 }
 
 std::size_t range_reference::height() const
@@ -110,9 +201,24 @@ bool range_reference::is_single_cell() const
     return width() == 1 && height() == 1;
 }
 
+bool range_reference::whole_row() const
+{
+    return top_left_.column() == xlnt::constants::min_column() && top_left_.column_absolute()
+        && bottom_right_.column() == xlnt::constants::max_column() && bottom_right_.column_absolute();
+}
+
+bool range_reference::whole_column() const
+{
+    return top_left_.row() == xlnt::constants::min_row() && top_left_.row_absolute()
+        && bottom_right_.row() == xlnt::constants::max_row() && bottom_right_.row_absolute();
+}
+
 std::string range_reference::to_string() const
 {
-    return top_left_.to_string() + ":" + bottom_right_.to_string();
+    if (is_single_cell())
+        return top_left().to_string();
+    else
+        return top_left_.to_string() + ":" + bottom_right_.to_string();
 }
 
 bool range_reference::operator==(const range_reference &comparand) const
@@ -122,7 +228,7 @@ bool range_reference::operator==(const range_reference &comparand) const
 
 bool range_reference::operator!=(const range_reference &comparand) const
 {
-    return comparand.top_left_ != top_left_ || comparand.bottom_right_ != bottom_right_;
+    return !(*this == comparand);
 }
 
 cell_reference range_reference::top_left() const
@@ -173,22 +279,22 @@ bool range_reference::operator!=(const char *reference_string) const
     return *this != std::string(reference_string);
 }
 
-XLNT_API bool operator==(const std::string &reference_string, const range_reference &ref)
+bool operator==(const std::string &reference_string, const range_reference &ref)
 {
     return ref == reference_string;
 }
 
-XLNT_API bool operator==(const char *reference_string, const range_reference &ref)
+bool operator==(const char *reference_string, const range_reference &ref)
 {
     return ref == reference_string;
 }
 
-XLNT_API bool operator!=(const std::string &reference_string, const range_reference &ref)
+bool operator!=(const std::string &reference_string, const range_reference &ref)
 {
     return ref != reference_string;
 }
 
-XLNT_API bool operator!=(const char *reference_string, const range_reference &ref)
+bool operator!=(const char *reference_string, const range_reference &ref)
 {
     return ref != reference_string;
 }

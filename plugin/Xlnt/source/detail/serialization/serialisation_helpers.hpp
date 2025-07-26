@@ -3,6 +3,8 @@
 
 #include <xlnt/cell/cell_type.hpp>
 #include <xlnt/cell/index_types.hpp>
+#include <detail/xlnt_config_impl.hpp>
+
 #include <string>
 
 namespace xlnt {
@@ -84,12 +86,24 @@ struct Cell
 
     bool is_phonetic = false; // 'ph'
     xlnt::cell_type type = xlnt::cell_type::number; // 't'
-    int cell_metatdata_idx = -1; // 'cm'
+    int cell_metadata_idx = -1; // 'cm'
     int style_index = -1; // 's'
     Cell_Reference ref{0, 0}; // 'r'
     std::string value; // <v> OR <is>
     std::string formula_string; // <f>
 };
+
+// for printing to file.
+// This matches the output format of excel irrespective of current locale
+XLNT_API_INTERNAL std::string serialise(double d);
+
+// Parses a string to a double-precision floating-point number. Optionally, num_characters_parsed can point
+// to a variable where the number of parsed characters will be stored.
+XLNT_API_INTERNAL double deserialise(const std::string &s, size_t *num_characters_parsed = nullptr);
+
+// Parses a string to a double-precision floating-point number. Optionally, end can point
+// to a pointer where the character after the last successfully parsed character will be stored.
+XLNT_API_INTERNAL double deserialise(const char *s, const char **end = nullptr);
 
 } // namespace detail
 } // namespace xlnt

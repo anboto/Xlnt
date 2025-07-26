@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -150,15 +151,7 @@ xlnt::number_format format::number_format() const
 
 format format::number_format(const xlnt::number_format &new_number_format, optional<bool> applied)
 {
-    auto copy = new_number_format;
-
-    if (!copy.has_id())
-    {
-        copy.id(d_->parent->next_custom_number_format_id());
-        d_->parent->number_formats.push_back(copy);
-    }
-
-    d_ = d_->parent->find_or_create_with(d_, copy, applied);
+    d_ = d_->parent->find_or_create_with(d_, new_number_format, applied);
     return format(d_);
 }
 

@@ -24,20 +24,35 @@ CONSOLE_APP_MAIN
 		    Vector<String> header = {"First", "Second"};
 		    
 		    xlnt::workbook wb;
-		    xlnt::worksheet ws = wb.active_sheet();		//Creating the output worksheet
+		    xlnt::worksheet ws = wb.active_sheet();		// Creating the output worksheet
 		    ws.title("My Data");
 		    
 		    ws.cell("A1").value(~header[0]);
 		    ws.cell("B1").value(~header[1]);
 		    ws.cell("C1").value("Sum");
-		    ws.range("A1:C1").font(xlnt::font().bold(true));
+		    ws.range("A1:C1").font(xlnt::font().bold(true).color(xlnt::color::red()));
 		    
+		    xlnt::fill fill(xlnt::pattern_fill()
+		    		.type(xlnt::pattern_fill_type::solid)
+                    .foreground(xlnt::color(xlnt::rgb_color("ffADD8E6"))));
+		    ws.range("A1:C1").fill(fill);
+    
+		    xlnt::border border;
+    		xlnt::border::border_property border_prop;
+    		border_prop.style(xlnt::border_style::medium);
+    		border.side(xlnt::border_side::start, border_prop);
+    		border.side(xlnt::border_side::end, border_prop);
+    		border.side(xlnt::border_side::top, border_prop);
+    		border.side(xlnt::border_side::bottom, border_prop);
+    		ws.range("A1:C1").border(border);
+    		
 		    for (int r = 0; r < data.size(); r++) {
 		        const Vector<double> &row = data[r];
 		        for (int c = 0; c < row.size(); c++)
 				    ws.cell(xlnt::cell_reference(c + 1, r + 2)).value(row[c]);
 		        ws.cell(xlnt::cell_reference(row.size() + 1, r + 2)).formula(~Format("=SUM(%s:%s)", GetCell(1, r+2), GetCell(row.size(), r+2)));
 		    }
+			
 		    wb.save(~file); 
 		}
 		{	// Loading

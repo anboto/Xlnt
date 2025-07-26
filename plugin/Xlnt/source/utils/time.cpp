@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,25 +22,12 @@
 // @license: http://www.opensource.org/licenses/mit-license.php
 // @author: see AUTHORS file
 #include <cmath>
+#include <cstdint>
 #include <ctime>
 
 #include <xlnt/utils/time.hpp>
-
-namespace {
-
-std::tm safe_localtime(std::time_t raw_time)
-{
-#ifdef _MSC_VER
-    std::tm result;
-    localtime_s(&result, &raw_time);
-
-    return result;
-#else
-    return *localtime(&raw_time);
-#endif
-}
-
-} // namespace
+#include <detail/time_helpers.hpp>
+#include <detail/serialization/parsers.hpp>
 
 namespace xlnt {
 
@@ -92,21 +80,54 @@ bool time::operator==(const time &comparand) const
         && microsecond == comparand.microsecond;
 }
 
-time::time(const std::string &time_string)
-    : hour(0), minute(0), second(0), microsecond(0)
+bool time::operator!=(const time &comparand) const
 {
-    std::string remaining = time_string;
-    auto colon_index = remaining.find(':');
-    hour = std::stoi(remaining.substr(0, colon_index));
-    remaining = remaining.substr(colon_index + 1);
-    colon_index = remaining.find(':');
-    minute = std::stoi(remaining.substr(0, colon_index));
-    colon_index = remaining.find(':');
+    return !(*this == comparand);
+}
 
-    if (colon_index != std::string::npos)
+time::time(const std::string &time_string)
+{
+    bool ok = true;
+    auto next_separator_index = time_string.find(':');
+    next_separator_index =  time_string.find(':');
+    ok = ok && detail::parse(time_string.substr(0, next_separator_index), hour) == std::errc();
+    auto previous_separator_index = next_separator_index;
+    next_separator_index = ok ? time_string.find(':', previous_separator_index + 1) : next_separator_index;
+    ok = ok && detail::parse(time_string.substr(previous_separator_index + 1, next_separator_index), minute) == std::errc();
+    previous_separator_index = next_separator_index;
+    next_separator_index = ok ? time_string.find('.', previous_separator_index + 1) : next_separator_index;
+    bool subseconds_available = next_separator_index != std::string::npos;
+    if (subseconds_available)
     {
-        remaining = remaining.substr(colon_index + 1);
-        second = std::stoi(remaining);
+        // First parse the seconds.
+        ok = ok && detail::parse(time_string.substr(previous_separator_index + 1, next_separator_index), second) == std::errc();
+        previous_separator_index = next_separator_index;
+    }
+    next_separator_index = ok ? std::string::npos : next_separator_index;
+    size_t num_characters_parsed = 0;
+    ok = ok && detail::parse(time_string.substr(previous_separator_index + 1, next_separator_index), subseconds_available ? microsecond : second, &num_characters_parsed) == std::errc();
+
+    if (subseconds_available)
+    {
+        constexpr size_t expected_digits = 6; // microseconds have 6 digits
+        size_t actual_digits = num_characters_parsed;
+
+        while (actual_digits > expected_digits)
+        {
+            microsecond /= 10;
+            --actual_digits;
+        }
+
+        while (actual_digits < expected_digits)
+        {
+            microsecond *= 10;
+            ++actual_digits;
+        }
+    }
+
+    if (!ok)
+    {
+        throw xlnt::invalid_parameter("invalid ISO time");
     }
 }
 
@@ -125,8 +146,16 @@ double time::to_number() const
 
 time time::now()
 {
-    std::tm now = safe_localtime(std::time(nullptr));
-    return time(now.tm_hour, now.tm_min, now.tm_sec);
+    optional<std::tm> now = detail::localtime_safe(std::time(nullptr));
+
+    if (now.is_set())
+    {
+        return time(now.get().tm_hour, now.get().tm_min, now.get().tm_sec);
+    }
+    else
+    {
+        return time();
+    }
 }
 
 } // namespace xlnt

@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +33,7 @@ namespace xlnt {
 /// <summary>
 /// The orientation of the worksheet when it is printed.
 /// </summary>
-enum class XLNT_API orientation
+enum class orientation
 {
     default_orientation,
     portrait,
@@ -42,7 +43,7 @@ enum class XLNT_API orientation
 /// <summary>
 /// The types of page breaks.
 /// </summary>
-enum class XLNT_API page_break
+enum class page_break
 {
     none = 0,
     row = 1,
@@ -52,7 +53,7 @@ enum class XLNT_API page_break
 /// <summary>
 /// The possible paper sizes for printing.
 /// </summary>
-enum class XLNT_API paper_size
+enum class paper_size
 {
     letter = 1,
     letter_small = 2,
@@ -71,7 +72,7 @@ enum class XLNT_API paper_size
 /// Defines how a worksheet appears in the workbook.
 /// A workbook must have at least one sheet which is visible at all times.
 /// </summary>
-enum class XLNT_API sheet_state
+enum class sheet_state
 {
     visible,
     hidden,
@@ -198,6 +199,8 @@ public:
     xlnt::optional<std::size_t> vertical_dpi_;
 
     bool operator==(const page_setup &rhs) const;
+
+    bool operator!=(const page_setup &rhs) const;
 
 private:
     /// <summary>

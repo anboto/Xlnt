@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -63,5 +64,10 @@ inline bool operator==(const print_options &lhs, const print_options &rhs)
         && lhs.print_grid_lines == rhs.print_grid_lines
         && lhs.print_headings == rhs.print_headings
         && lhs.vertical_centered == rhs.vertical_centered;
+}
+
+inline bool operator!=(const print_options &lhs, const print_options &rhs)
+{
+    return !(lhs == rhs);
 }
 } // namespace xlnt

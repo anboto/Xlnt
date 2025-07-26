@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,9 +26,7 @@
 #pragma once
 
 #include <iterator>
-#include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include <xlnt/xlnt_config.hpp>
@@ -107,14 +106,14 @@ public:
     worksheet(const worksheet &rhs);
 
     /// <summary>
-    /// Returns a reference to the workbook this worksheet is owned by.
+    /// Returns the workbook this worksheet is owned by.
     /// </summary>
-    class workbook &workbook();
+    class workbook workbook();
 
     /// <summary>
-    /// Returns a reference to the workbook this worksheet is owned by.
+    /// Returns the workbook this worksheet is owned by.
     /// </summary>
-    const class workbook &workbook() const;
+    const class workbook workbook() const;
 
     /// <summary>
     /// Deletes data held in the worksheet that does not affect the internal data or display.
@@ -229,6 +228,7 @@ public:
     /// <summary>
     /// Returns a range encompassing all cells in this sheet which will
     /// be iterated upon in row-major order. If skip_null is true (default),
+    /// the range does not contain empty rows/columns at its boundaries and
     /// empty rows and cells will be skipped during iteration of the range.
     /// </summary>
     class range rows(bool skip_null = true);
@@ -236,6 +236,7 @@ public:
     /// <summary>
     /// Returns a range encompassing all cells in this sheet which will
     /// be iterated upon in row-major order. If skip_null is true (default),
+    /// the range does not contain empty rows/columns at its boundaries and
     /// empty rows and cells will be skipped during iteration of the range.
     /// </summary>
     const class range rows(bool skip_null = true) const;
@@ -243,6 +244,7 @@ public:
     /// <summary>
     /// Returns a range ecompassing all cells in this sheet which will
     /// be iterated upon in column-major order. If skip_null is true (default),
+    /// the range does not contain empty rows/columns at its boundaries and
     /// empty columns and cells will be skipped during iteration of the range.
     /// </summary>
     class range columns(bool skip_null = true);
@@ -250,6 +252,7 @@ public:
     /// <summary>
     /// Returns a range ecompassing all cells in this sheet which will
     /// be iterated upon in column-major order. If skip_null is true (default),
+    /// the range does not contain empty rows/columns at its boundaries and
     /// empty columns and cells will be skipped during iteration of the range.
     /// </summary>
     const class range columns(bool skip_null = true) const;
@@ -436,8 +439,9 @@ public:
     /// Returns a range_reference pointing to the full range of cells in the worksheet.
     /// If skip_null is true (default), empty cells (For example if the first row or column is empty)
     /// will not be included in upper left bound of range.
+    /// If skip_row_props is false (default), rows with only properties being defined will be returned too.
     /// </summary>
-    range_reference calculate_dimension(bool skip_null=true) const;
+    range_reference calculate_dimension(bool skip_null=true, bool skip_row_props=false) const;
 
     // cell merge
 
@@ -504,10 +508,11 @@ public:
     const class cell operator[](const cell_reference &reference) const;
 
     /// <summary>
-    /// Returns true if this worksheet is equal to other. If reference is true, the comparison
-    /// will only check that both worksheets point to the same sheet in the same workbook.
+    /// Returns true if this worksheet is equal to other. If compare_by_reference is true, the comparison
+    /// will only check that both worksheets point to the same sheet in the same workbook. Otherwise,
+    /// if compare_by_reference is false, all worksheet properties except for the id and title are compared.
     /// </summary>
-    bool compare(const worksheet &other, bool reference) const;
+    bool compare(const worksheet &other, bool compare_by_reference) const;
 
     // page
 
@@ -663,7 +668,7 @@ public:
     /// Sets columns to repeat at left during printing.
     /// </summary>
     void print_title_cols(column_t start, column_t end);
-    
+
     /// <summary>
     /// Get columns to repeat at left during printing.
     /// </summary>
@@ -693,7 +698,7 @@ public:
     /// Returns the print area defined for this sheet.
     /// </summary>
     range_reference print_area() const;
-    
+
     /// <summary>
     /// Returns true if the print area is defined for this sheet.
     /// </summary>
@@ -793,6 +798,16 @@ public:
     /// </summary>
     bool is_empty() const;
 
+    /// <summary>
+    /// Get the zoom scale (percent) of the default sheetView. Defaults to 100 if unset.
+    /// </summary>
+    int zoom_scale() const;
+
+    /// <summary>
+    /// Set the zoom scale (percent) on the default sheetView.
+    /// </summary>
+    void zoom_scale(int scale);
+
 private:
     friend class cell;
     friend class const_range_iterator;
@@ -835,7 +850,7 @@ private:
     /// <summary>
     /// The pointer to this sheet's implementation.
     /// </summary>
-    detail::worksheet_impl *d_;
+    detail::worksheet_impl *d_ = nullptr;
 };
 
 } // namespace xlnt

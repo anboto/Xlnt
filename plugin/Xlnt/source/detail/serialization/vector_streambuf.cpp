@@ -1,4 +1,5 @@
-// Copyright (c) 2016-2021 Thomas Fussell
+// Copyright (c) 2016-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +24,7 @@
 
 #include <xlnt/utils/exceptions.hpp>
 #include <detail/serialization/vector_streambuf.hpp>
+#include <algorithm>
 
 namespace xlnt {
 namespace detail {
@@ -213,7 +215,7 @@ std::streampos vector_ostreambuf::seekpos(std::streampos sp, std::ios_base::open
     return static_cast<std::ptrdiff_t>(position_);
 }
 
-XLNT_API std::vector<std::uint8_t> to_vector(std::istream &in_stream)
+std::vector<std::uint8_t> to_vector(std::istream &in_stream)
 {
     if (!in_stream)
     {
@@ -225,7 +227,7 @@ XLNT_API std::vector<std::uint8_t> to_vector(std::istream &in_stream)
         std::istreambuf_iterator<char>());
 }
 
-XLNT_API void to_stream(const std::vector<std::uint8_t> &bytes, std::ostream &out_stream)
+void to_stream(const std::vector<std::uint8_t> &bytes, std::ostream &out_stream)
 {
     if (!out_stream)
     {
@@ -235,7 +237,7 @@ XLNT_API void to_stream(const std::vector<std::uint8_t> &bytes, std::ostream &ou
     out_stream.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::ptrdiff_t>(bytes.size()));
 }
 
-XLNT_API std::ostream &operator<<(std::ostream &out_stream, const std::vector<std::uint8_t> &bytes)
+std::ostream &operator<<(std::ostream &out_stream, const std::vector<std::uint8_t> &bytes)
 {
     to_stream(bytes, out_stream);
     return out_stream;

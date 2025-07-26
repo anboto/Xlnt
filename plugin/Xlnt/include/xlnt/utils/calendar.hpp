@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +32,7 @@ namespace xlnt {
 /// An enumeration of possible base dates.
 /// Dates in Excel are stored as days since this base date.
 /// </summary>
-enum class XLNT_API calendar
+enum class calendar
 {
     windows_1900,
     mac_1904

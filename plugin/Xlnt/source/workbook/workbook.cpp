@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +24,8 @@
 // @author: see AUTHORS file
 
 #include <algorithm>
-#include <array>
 #include <fstream>
 #include <functional>
-#include <set>
 
 #include <xlnt/cell/cell.hpp>
 #include <xlnt/packaging/manifest.hpp>
@@ -249,7 +248,7 @@ std::string content_type(xlnt::relationship_type type)
     case relationship_type::volatile_dependencies:
         return "application/vnd.openxmlformats-officedocument.spreadsheetml.volatileDependencies+xml";
     case relationship_type::vbaproject:
-        return "application/vnd.ms-office.vbaProject";        
+        return "application/vnd.ms-office.vbaProject";
     case relationship_type::worksheet:
         return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
     }
@@ -390,8 +389,7 @@ void workbook::arch_id_flags(const std::size_t flags)
 
 workbook workbook::empty()
 {
-    auto impl = new detail::workbook_impl();
-    workbook wb(impl);
+    workbook wb(std::make_shared<detail::workbook_impl>());
 
     wb.register_package_part(relationship_type::office_document);
 
@@ -456,7 +454,7 @@ workbook workbook::empty()
 
     wb.d_->stylesheet_ = detail::stylesheet();
     auto &stylesheet = wb.d_->stylesheet_.get();
-    stylesheet.parent = &wb;
+    stylesheet.parent = wb.d_;
 
     auto default_border = border()
                               .side(border_side::bottom, border::border_property())
@@ -514,11 +512,24 @@ workbook::workbook(const xlnt::path &file)
     load(file);
 }
 
-workbook::workbook(const xlnt::path &file, const std::string &password)
+template <typename T>
+void workbook::construct(const xlnt::path &file, const T &password)
 {
     *this = empty();
     load(file, password);
 }
+
+workbook::workbook(const xlnt::path &file, const std::string &password)
+{
+    construct(file, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+workbook::workbook(const xlnt::path &file, std::u8string_view password)
+{
+    construct(file, password);
+}
+#endif
 
 workbook::workbook(std::istream &data)
 {
@@ -526,22 +537,43 @@ workbook::workbook(std::istream &data)
     load(data);
 }
 
-workbook::workbook(std::istream &data, const std::string &password)
+template <typename T>
+void workbook::construct(std::istream &data, const T &password)
 {
     *this = empty();
     load(data, password);
 }
 
-workbook::workbook(detail::workbook_impl *impl)
-    : d_(impl)
+workbook::workbook(std::istream &data, const std::string &password)
 {
-    if (impl != nullptr)
+    construct(data, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+workbook::workbook(std::istream &data, std::u8string_view password)
+{
+    construct(data, password);
+}
+#endif
+
+workbook::workbook(std::shared_ptr<detail::workbook_impl> impl)
+{
+    set_impl(std::move(impl));
+}
+
+workbook::workbook(std::weak_ptr<detail::workbook_impl> impl)
+{
+    set_impl(impl.lock());
+}
+
+void workbook::set_impl(std::shared_ptr<detail::workbook_impl> impl)
+{
+    if (impl == nullptr)
     {
-        if (d_->stylesheet_.is_set())
-        {
-            d_->stylesheet_.get().parent = this;
-        }
+        throw xlnt::invalid_parameter("invalid workbook pointer");
     }
+
+    d_ = std::move(impl);
 }
 
 void workbook::register_package_part(relationship_type type)
@@ -810,7 +842,7 @@ worksheet workbook::create_sheet()
 
 worksheet workbook::copy_sheet(worksheet to_copy)
 {
-    if (to_copy.d_->parent_ != this) throw invalid_parameter();
+    if (to_copy.d_->parent_.lock() != d_) throw invalid_parameter();
 
     detail::worksheet_impl impl(*to_copy.d_);
     auto new_sheet = create_sheet();
@@ -840,7 +872,7 @@ worksheet workbook::copy_sheet(worksheet to_copy, std::size_t index)
     return sheet_by_index(index);
 }
 
-std::size_t workbook::index(worksheet ws)
+std::size_t workbook::index(worksheet ws) const
 {
     auto match = std::find(begin(), end(), ws);
 
@@ -850,6 +882,39 @@ std::size_t workbook::index(worksheet ws)
     }
 
     return static_cast<std::size_t>(std::distance(begin(), match));
+}
+
+void workbook::move_sheet(worksheet worksheet, std::size_t newIndex)
+{
+    if(newIndex >= sheet_count())
+        throw invalid_parameter();
+
+    auto sourcePosition = d_->worksheets_.end();
+    auto targetPosition = d_->worksheets_.begin();
+    size_t currentIndex = 0;
+    size_t sourceIndex  = sheet_count();
+
+    for(auto iter = d_->worksheets_.begin(); iter != d_->worksheets_.end(); ++iter)
+    {
+        if(worksheet.d_ == (&*iter))
+        {
+            sourcePosition = iter;
+            sourceIndex    = currentIndex;
+        }
+
+        if(currentIndex == newIndex)
+            targetPosition = iter;
+
+        ++currentIndex;
+    }
+
+    if(sourcePosition == d_->worksheets_.end())
+        throw invalid_parameter();
+
+    if(sourceIndex < newIndex)
+        ++targetPosition;
+
+    d_->worksheets_.splice(targetPosition, d_->worksheets_, sourcePosition);
 }
 
 void workbook::create_named_range(const std::string &name, worksheet range_owner, const std::string &reference_string)
@@ -924,9 +989,21 @@ void workbook::load(const std::vector<std::uint8_t> &data)
     load(data_stream);
 }
 
-void workbook::load(const std::string &filename)
+template <typename T>
+void workbook::load_internal(const T &filename)
 {
     return load(path(filename));
+}
+
+template <typename T>
+void workbook::load_internal(const T &filename, const T &password)
+{
+    return load(path(filename), password);
+}
+
+void workbook::load(const std::string &filename)
+{
+    return load_internal(filename);
 }
 
 void workbook::load(const path &filename)
@@ -944,10 +1021,11 @@ void workbook::load(const path &filename)
 
 void workbook::load(const std::string &filename, const std::string &password)
 {
-    return load(path(filename), password);
+    return load_internal(filename, password);
 }
 
-void workbook::load(const path &filename, const std::string &password)
+template <typename T>
+void workbook::load_internal(const xlnt::path &filename, const T &password)
 {
     std::ifstream file_stream;
     open_stream(file_stream, filename.string());
@@ -960,7 +1038,20 @@ void workbook::load(const path &filename, const std::string &password)
     return load(file_stream, password);
 }
 
-void workbook::load(const std::vector<std::uint8_t> &data, const std::string &password)
+void workbook::load(const path &filename, const std::string &password)
+{
+    load_internal(filename, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void workbook::load(const xlnt::path &filename, std::u8string_view password)
+{
+    load_internal(filename, password);
+}
+#endif
+
+template <typename T>
+void workbook::load_internal(const std::vector<std::uint8_t> &data, const T &password)
 {
     if (data.size() < 22) // the shortest ZIP file is 22 bytes
     {
@@ -972,12 +1063,37 @@ void workbook::load(const std::vector<std::uint8_t> &data, const std::string &pa
     load(data_stream, password);
 }
 
-void workbook::load(std::istream &stream, const std::string &password)
+void workbook::load(const std::vector<std::uint8_t> &data, const std::string &password)
+{
+    load_internal(data, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void workbook::load(const std::vector<std::uint8_t> &data, std::u8string_view password)
+{
+    load_internal(data, password);
+}
+#endif
+
+template <typename T>
+void workbook::load_internal(std::istream &stream, const T &password)
 {
     clear();
     detail::xlsx_consumer consumer(*this);
     consumer.read(stream, password);
 }
+
+void workbook::load(std::istream &stream, const std::string &password)
+{
+    load_internal(stream, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void workbook::load(std::istream &stream, std::u8string_view password)
+{
+    load_internal(stream, password);
+}
+#endif
 
 void workbook::save(std::vector<std::uint8_t> &data) const
 {
@@ -986,21 +1102,46 @@ void workbook::save(std::vector<std::uint8_t> &data) const
     save(data_stream);
 }
 
-void workbook::save(std::vector<std::uint8_t> &data, const std::string &password) const
+template <typename T>
+void workbook::save_internal(std::vector<std::uint8_t> &data, const T &password) const
 {
     xlnt::detail::vector_ostreambuf data_buffer(data);
     std::ostream data_stream(&data_buffer);
     save(data_stream, password);
 }
 
-void workbook::save(const std::string &filename) const
+void workbook::save(std::vector<std::uint8_t> &data, const std::string &password) const
+{
+    save_internal(data, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void workbook::save(std::vector<std::uint8_t> &data, std::u8string_view password) const
+{
+    save_internal(data, password);
+}
+#endif
+
+template <typename T>
+void workbook::save_internal(const T &filename) const
 {
     save(path(filename));
 }
 
-void workbook::save(const std::string &filename, const std::string &password) const
+template <typename T>
+void workbook::save_internal(const T &filename, const T &password) const
 {
     save(path(filename), password);
+}
+
+void workbook::save(const std::string &filename) const
+{
+    save_internal(filename);
+}
+
+void workbook::save(const std::string &filename, const std::string &password) const
+{
+    save_internal(filename, password);
 }
 
 void workbook::save(const path &filename) const
@@ -1010,12 +1151,25 @@ void workbook::save(const path &filename) const
     save(file_stream);
 }
 
-void workbook::save(const path &filename, const std::string &password) const
+template <typename T>
+void workbook::save_internal(const xlnt::path &filename, const T &password) const
 {
     std::ofstream file_stream;
     open_stream(file_stream, filename.string());
     save(file_stream, password);
 }
+
+void workbook::save(const path &filename, const std::string &password) const
+{
+    save_internal(filename, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void workbook::save(const xlnt::path &filename, std::u8string_view password) const
+{
+    save_internal(filename, password);
+}
+#endif
 
 void workbook::save(std::ostream &stream) const
 {
@@ -1023,11 +1177,24 @@ void workbook::save(std::ostream &stream) const
     producer.write(stream);
 }
 
-void workbook::save(std::ostream &stream, const std::string &password) const
+template <typename T>
+void workbook::save_internal(std::ostream &stream, const T &password) const
 {
     detail::xlsx_producer producer(*this);
     producer.write(stream, password);
 }
+
+void workbook::save(std::ostream &stream, const std::string &password) const
+{
+    save_internal(stream, password);
+}
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void workbook::save(std::ostream &stream, std::u8string_view password) const
+{
+    save_internal(stream, password);
+}
+#endif
 
 #ifdef _MSC_VER
 void workbook::save(const std::wstring &filename) const
@@ -1056,6 +1223,28 @@ void workbook::load(const std::wstring &filename, const std::string &password)
     std::ifstream file_stream;
     open_stream(file_stream, filename);
     load(file_stream, password);
+}
+#endif
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void workbook::save(std::u8string_view filename) const
+{
+    save_internal(filename);
+}
+
+void workbook::save(std::u8string_view filename, std::u8string_view password) const
+{
+    save_internal(filename, password);
+}
+
+void workbook::load(std::u8string_view filename)
+{
+    load_internal(filename);
+}
+
+void workbook::load(std::u8string_view filename, std::u8string_view password)
+{
+    load_internal(filename, password);
 }
 #endif
 
@@ -1189,9 +1378,21 @@ void workbook::clear()
     d_->stylesheet_.clear();
 }
 
+bool workbook::compare(const workbook &other, bool compare_by_reference) const
+{
+    if (compare_by_reference)
+    {
+        return d_ == other.d_;
+    }
+    else
+    {
+        return *d_ == *other.d_;
+    }
+}
+
 bool workbook::operator==(const workbook &rhs) const
 {
-    return *d_ == *rhs.d_;
+    return compare(rhs, true);
 }
 
 bool workbook::operator!=(const workbook &rhs) const
@@ -1201,66 +1402,35 @@ bool workbook::operator!=(const workbook &rhs) const
 
 void workbook::swap(workbook &right)
 {
-    auto &left = *this;
+    std::swap(d_, right.d_);
+}
 
-    using std::swap;
-    swap(left.d_, right.d_);
-
-    if (left.d_ != nullptr)
+workbook workbook::clone(clone_method method) const
+{
+    switch (method)
     {
-        for (auto ws : left)
+    case clone_method::deep_copy:
+    {
+        workbook wb;
+        *wb.d_ = *d_;
+
+        for (auto ws : wb)
         {
-            ws.parent(left);
+            ws.parent(wb);
         }
 
-        if (left.d_->stylesheet_.is_set())
-        {
-            left.d_->stylesheet_.get().parent = &left;
-        }
+        wb.d_->stylesheet_.get().parent = wb.d_;
+
+        return wb;
     }
-
-    if (right.d_ != nullptr)
+    case clone_method::shallow_copy:
     {
-        for (auto ws : right)
-        {
-            ws.parent(right);
-        }
-
-        if (right.d_->stylesheet_.is_set())
-        {
-            right.d_->stylesheet_.get().parent = &right;
-        }
+        return workbook(d_);
+    }
+    default:
+        throw xlnt::invalid_parameter("clone method not supported");
     }
 }
-
-workbook &workbook::operator=(workbook other)
-{
-    swap(other);
-    d_->stylesheet_.get().parent = this;
-
-    return *this;
-}
-
-workbook::workbook(workbook &&other)
-    : workbook(nullptr)
-{
-    swap(other);
-}
-
-workbook::workbook(const workbook &other)
-    : workbook()
-{
-    *d_.get() = *other.d_.get();
-
-    for (auto ws : *this)
-    {
-        ws.parent(*this);
-    }
-
-    d_->stylesheet_.get().parent = this;
-}
-
-workbook::~workbook() = default;
 
 bool workbook::has_theme() const
 {

@@ -1,4 +1,5 @@
-// Copyright (c) 2016-2021 Thomas Fussell
+// Copyright (c) 2016-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +23,8 @@
 // @author: see AUTHORS file
 
 #pragma once
+
+#include <cstddef>
 
 #include <xlnt/xlnt_config.hpp>
 
@@ -50,6 +53,11 @@ inline bool operator==(const calculation_properties &lhs, const calculation_prop
 {
     return lhs.calc_id == rhs.calc_id
         && lhs.concurrent_calc == rhs.concurrent_calc;
+}
+
+inline bool operator!=(const calculation_properties &lhs, const calculation_properties &rhs)
+{
+    return !(lhs == rhs);
 }
 
 } // namespace xlnt

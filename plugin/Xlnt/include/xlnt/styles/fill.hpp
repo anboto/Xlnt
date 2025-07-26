@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +36,7 @@ namespace xlnt {
 /// <summary>
 /// The pattern of pixels upon which the corresponding pattern fill will be displayed
 /// </summary>
-enum class XLNT_API pattern_fill_type
+enum class pattern_fill_type
 {
     none,
     solid,
@@ -130,7 +131,7 @@ private:
 /// <summary>
 /// Enumerates the types of gradient fills
 /// </summary>
-enum class XLNT_API gradient_fill_type
+enum class gradient_fill_type
 {
     linear,
     path
@@ -286,7 +287,7 @@ private:
 /// <summary>
 /// Enumerates the possible fill types
 /// </summary>
-enum class XLNT_API fill_type
+enum class fill_type
 {
     pattern,
     gradient

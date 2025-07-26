@@ -35,15 +35,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 #pragma once
 
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 
 #include <xlnt/xlnt_config.hpp>
+#include <detail/xlnt_config_impl.hpp>
 #include <xlnt/utils/path.hpp>
-
-//TODO: don't export these classes (some tests are using them for now)
 
 namespace xlnt {
 namespace detail {
@@ -52,7 +52,7 @@ namespace detail {
 /// A structure representing the header that occurs before each compressed file in a ZIP
 /// archive and again at the end of the file with more information.
 /// </summary>
-struct XLNT_API zheader
+struct XLNT_API_INTERNAL zheader
 {
     std::uint16_t version = 20;
     std::uint16_t flags = 0;
@@ -72,7 +72,7 @@ struct XLNT_API zheader
 /// Writes a series of uncompressed binary file data as ostreams into another ostream
 /// according to the ZIP format.
 /// </summary>
-class XLNT_API ozstream
+class XLNT_API_INTERNAL ozstream
 {
 public:
     /// <summary>
@@ -99,7 +99,7 @@ private:
 /// Reads an archive containing a number of files from an istream and allows them
 /// to be decompressed into an istream.
 /// </summary>
-class XLNT_API izstream
+class XLNT_API_INTERNAL izstream
 {
 public:
     /// <summary>

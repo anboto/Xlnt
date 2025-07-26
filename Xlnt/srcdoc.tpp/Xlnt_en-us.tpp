@@ -7,6 +7,6 @@ topic "MatIO";
 a ][*A2 library for manipulating spreadsheets in memory and reading/writing 
 them from/to XLSX files.]&]
 [s0; [2 Xlnt U`+`+ wrapper includes some helper functions for Xlnt, 
-updated to release ][%-^https`:`/`/github`.com`/tfussell`/xlnt`/commit`/297b331435d6dee09bf89c8a5ad974b01f18039b^2 2
-97b331][%-2 _][2 (3/12/2022)]&]
+updated to ][^https`:`/`/github`.com`/xlnt`-community`/xlnt`/commit`/326bcc57121c49c7c2e9bb98dee05bcc78f4a71c^2 3
+26bcc5][2  (22/07/2025)]&]
 [s0; [2 A simple sample is included in examples/Xlint`_demo`_cl package.]]]

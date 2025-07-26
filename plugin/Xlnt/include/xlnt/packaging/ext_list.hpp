@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -67,6 +68,8 @@ public:
 
     bool operator==(const ext_list &rhs) const;
 
+    bool operator!=(const ext_list &rhs) const;
+
 private:
     std::vector<ext> extensions_;
 };
@@ -75,5 +78,10 @@ inline bool operator==(const ext_list::ext &lhs, const ext_list::ext &rhs)
 {
     return lhs.extension_ID_ == rhs.extension_ID_
         && lhs.serialised_value_ == rhs.serialised_value_;
+}
+
+inline bool operator!=(const ext_list::ext &lhs, const ext_list::ext &rhs)
+{
+    return !(lhs == rhs);
 }
 } // namespace xlnt

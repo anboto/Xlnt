@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -169,6 +170,11 @@ public:
     /// </summary>
     bool operator==(const uri &other) const;
 
+    /// <summary>
+    /// Returns true if this URI is different to other.
+    /// </summary>
+    bool operator!=(const uri &other) const;
+
 private:
     /// <summary>
     /// True if this URI is absolute.
@@ -176,14 +182,29 @@ private:
     bool absolute_ = false;
 
     /// <summary>
-    /// The scheme, like "http"
-    /// </summary>
-    std::string scheme_;
-
-    /// <summary>
     /// True if this URI has an authentication section.
     /// </summary>
     bool has_authentication_ = false;
+
+    /// <summary>
+    /// True if this URI has a non-default port specified
+    /// </summary>
+    bool has_port_ = false;
+
+    /// <summary>
+    /// True if this URI has a query section
+    /// </summary>
+    bool has_query_ = false;
+
+    /// <summary>
+    /// True if this URI has a fragment section
+    /// </summary>
+    bool has_fragment_ = false;
+
+    /// <summary>
+    /// The scheme, like "http"
+    /// </summary>
+    std::string scheme_;
 
     /// <summary>
     /// The username
@@ -201,29 +222,14 @@ private:
     std::string host_;
 
     /// <summary>
-    /// True if this URI has a non-default port specified
-    /// </summary>
-    bool has_port_ = false;
-
-    /// <summary>
     /// The numeric port
     /// </summary>
     std::size_t port_ = 0;
 
     /// <summary>
-    /// True if this URI has a query section
-    /// </summary>
-    bool has_query_ = false;
-
-    /// <summary>
     /// The query section
     /// </summary>
     std::string query_;
-
-    /// <summary>
-    /// True if this URI has a fragment section
-    /// </summary>
-    bool has_fragment_ = false;
 
     /// <summary>
     /// The fragment section

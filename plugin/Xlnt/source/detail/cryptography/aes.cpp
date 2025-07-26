@@ -1,4 +1,5 @@
-// Copyright (c) 2017-2021 Thomas Fussell
+// Copyright (c) 2017-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +26,8 @@
 // https://github.com/libtom/libtomcrypt/blob/develop/src/ciphers/aes/aes_tab.c
 // https://github.com/libtom/libtomcrypt/blob/develop/src/ciphers/aes/aes.c
 
-#include <algorithm>
 #include <array>
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <xlnt/utils/exceptions.hpp>

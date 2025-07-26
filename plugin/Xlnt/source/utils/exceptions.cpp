@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +40,7 @@ void exception::message(const std::string &message)
     message_ = message;
 }
 
-std::string exception::message()
+const std::string & exception::message()
 {
     return message_;
 }
@@ -113,8 +114,8 @@ illegal_character::~illegal_character()
 {
 }
 
-invalid_parameter::invalid_parameter()
-    : exception("invalid parameter")
+invalid_parameter::invalid_parameter(const char *optional_message)
+    : exception(optional_message != nullptr ? optional_message : "invalid parameter")
 {
 }
 
@@ -122,8 +123,8 @@ invalid_parameter::~invalid_parameter()
 {
 }
 
-invalid_attribute::invalid_attribute()
-    : exception("bad attribute")
+invalid_attribute::invalid_attribute(const char *optional_message)
+    : exception(optional_message != nullptr ? optional_message : "bad attribute")
 {
 }
 

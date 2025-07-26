@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +29,11 @@
 #include <vector>
 
 #include <xlnt/xlnt_config.hpp>
+#include <xlnt/internal/features.hpp>
+
+#if XLNT_HAS_INCLUDE(<string_view>) && XLNT_HAS_FEATURE(U8_STRING_VIEW)
+  #include <string_view>
+#endif
 
 namespace xlnt {
 
@@ -56,6 +62,18 @@ public:
     /// Construct a path from a string with an explicit directory seprator.
     /// </summary>
     path(const std::string &path_string, char sep);
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Counstruct a path from a string representing the path.
+    /// </summary>
+    explicit path(std::u8string_view path_string);
+
+    /// <summary>
+    /// Construct a path from a string with an explicit directory seprator.
+    /// </summary>
+    path(std::u8string_view path_string, char sep);
+#endif
 
     // general attributes
 
@@ -165,6 +183,13 @@ public:
     /// Append the provided part to this path and return the result.
     /// </summary>
     path append(const std::string &to_append) const;
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Append the provided part to this path and return the result.
+    /// </summary>
+    path append(std::u8string_view to_append) const;
+#endif
 
     /// <summary>
     /// Append the provided part to this path and return the result.

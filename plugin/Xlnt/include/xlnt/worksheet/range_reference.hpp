@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -73,6 +74,16 @@ public:
     /// Returns true if the range has a width and height of 1 cell.
     /// </summary>
     bool is_single_cell() const;
+
+    /// <summary>
+    /// Returns true if the range spans the whole row
+    /// </summary>
+    bool whole_row() const;
+
+    /// <summary>
+    /// Returns true if the range spans the whole column
+    /// </summary>
+    bool whole_column() const;
 
     /// <summary>
     /// Returns the number of columns encompassed by this range.

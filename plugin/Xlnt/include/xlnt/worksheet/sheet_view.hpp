@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -217,6 +218,22 @@ public:
     }
 
     /// <summary>
+    /// Sets the zoom scale (percentage) for this view.
+    /// </summary>
+    void zoom_scale(int scale)
+    {
+        zoom_scale_ = scale;
+    }
+
+    /// <summary>
+    /// Returns the zoom scale (percentage).
+    /// </summary>
+    int zoom_scale() const
+    {
+        return zoom_scale_;
+    }
+
+    /// <summary>
     /// Returns true if this view is equal to rhs based on its id, grid lines setting,
     /// default grid color, pane, and selections.
     /// </summary>
@@ -227,7 +244,16 @@ public:
             && default_grid_color_ == rhs.default_grid_color_
             && pane_ == rhs.pane_
             && selections_ == rhs.selections_
-            && top_left_cell_ == rhs.top_left_cell_;
+            && top_left_cell_ == rhs.top_left_cell_
+            && zoom_scale_ == rhs.zoom_scale_;
+    }
+
+    /// <summary>
+    /// Returns the negation of the equality operator.
+    /// </summary>
+    bool operator!=(const sheet_view &rhs) const
+    {
+        return !(*this == rhs);
     }
 
 private:
@@ -265,6 +291,11 @@ private:
     /// The collection of selections
     /// </summary>
     std::vector<xlnt::selection> selections_;
+
+    /// <summary>
+    /// The zoom scale (percent), e.g. 100
+    /// </summary>
+    int zoom_scale_ = 100;
 };
 
 } // namespace xlnt

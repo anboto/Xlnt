@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +26,12 @@
 #pragma once
 
 #include <array>
-#include <string>
+#include <cstring>
+#include <functional>
 
 #include <xlnt/xlnt_config.hpp>
 #include <xlnt/utils/optional.hpp>
+#include <xlnt/utils/hash_combine.hpp>
 
 namespace xlnt {
 
@@ -348,3 +351,48 @@ private:
 };
 
 } // namespace xlnt
+
+namespace std {
+
+template<>
+struct hash<xlnt::color>
+{
+    size_t operator()(const xlnt::color& c) const
+    {
+        size_t seed = 0;
+        // Start by hashing the type to prevent collisions between different color types
+        // that might share an underlying value (e.g., theme(1) vs indexed(1)).
+        xlnt::detail::hash_combine(seed, static_cast<int>(c.type()));
+
+        // Hash auto color flag
+        xlnt::detail::hash_combine(seed, c.auto_());
+
+        // Hash tint if present
+        if (c.has_tint())
+        {
+            xlnt::detail::hash_combine(seed, c.tint());
+        }
+
+        switch (c.type())
+        {
+            case xlnt::color_type::indexed:
+                xlnt::detail::hash_combine(seed, c.indexed().index());
+                break;
+            case xlnt::color_type::theme:
+                xlnt::detail::hash_combine(seed, c.theme().index());
+                break;
+            case xlnt::color_type::rgb:
+            {
+                const auto& rgb = c.rgb();
+                xlnt::detail::hash_combine(seed, rgb.red());
+                xlnt::detail::hash_combine(seed, rgb.green());
+                xlnt::detail::hash_combine(seed, rgb.blue());
+                xlnt::detail::hash_combine(seed, rgb.alpha());
+                break;
+            }
+        }
+        return seed;
+    }
+};
+
+} // namespace std

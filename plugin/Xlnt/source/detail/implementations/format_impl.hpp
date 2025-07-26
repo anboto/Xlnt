@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+#include <detail/xlnt_config_impl.hpp>
+
 #include <xlnt/styles/alignment.hpp>
 #include <xlnt/styles/border.hpp>
 #include <xlnt/styles/fill.hpp>
@@ -25,26 +27,22 @@ struct stylesheet;
 
 struct format_impl
 {
-	stylesheet *parent;
+	stylesheet *parent = nullptr;
 
-	std::size_t id;
+	std::size_t id = 0;
 
 	optional<std::size_t> alignment_id;
-    optional<bool> alignment_applied;
-
 	optional<std::size_t> border_id;
+    optional<std::size_t> fill_id;
+    optional<std::size_t> font_id;
+    optional<std::size_t> number_format_id;
+    optional<std::size_t> protection_id;
+
+    optional<bool> alignment_applied;
     optional<bool> border_applied;
-
-	optional<std::size_t> fill_id;
     optional<bool> fill_applied;
-
-	optional<std::size_t> font_id;
     optional<bool> font_applied;
-
-	optional<std::size_t> number_format_id;
     optional<bool> number_format_applied;
-
-	optional<std::size_t> protection_id;
     optional<bool> protection_applied;
 
     bool pivot_button_ = false;
@@ -54,10 +52,10 @@ struct format_impl
 
     std::size_t references = 0;
 
-    XLNT_API friend bool operator==(const format_impl &left, const format_impl &right)
+    friend bool operator==(const format_impl &left, const format_impl &right)
     {
-        return left.parent == right.parent
-            && left.alignment_id == right.alignment_id
+        // not comparing parent
+        return left.alignment_id == right.alignment_id
             && left.alignment_applied == right.alignment_applied
             && left.border_id == right.border_id
             && left.border_applied == right.border_applied

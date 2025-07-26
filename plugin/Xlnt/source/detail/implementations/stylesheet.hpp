@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +24,7 @@
 // @author: see AUTHORS file
 #pragma once
 
+#include <algorithm>
 #include <list>
 #include <string>
 #include <vector>
@@ -53,7 +55,7 @@ struct stylesheet
 		impl.id = format_impls.size() - 1;
 
         impl.references = default_format ? 1 : 0;
-        
+
         return xlnt::format(&impl);
     }
 
@@ -171,7 +173,7 @@ struct stylesheet
 
 		return id;
 	}
-    
+
     template<typename T, typename C>
     std::size_t find_or_add(C &container, const T &item)
     {
@@ -186,7 +188,7 @@ struct stylesheet
         return std::size_t(iter - container.begin());
 #pragma GCC diagnostic pop
     }
-    
+
     template<typename T>
     std::unordered_map<std::size_t, std::size_t> garbage_collect(
         const std::unordered_map<std::size_t, std::size_t> &reference_counts,
@@ -209,11 +211,11 @@ struct stylesheet
 
         return id_map;
     }
-    
+
     void garbage_collect()
     {
         if (!garbage_collection_enabled) return;
-        
+
         auto format_iter = format_impls.begin();
         while (format_iter != format_impls.end())
         {
@@ -228,7 +230,7 @@ struct stylesheet
                 format_iter = format_impls.erase(format_iter);
             }
         }
-        
+
         std::size_t new_id = 0;
 
         std::unordered_map<std::size_t, std::size_t> alignment_reference_counts;
@@ -237,80 +239,80 @@ struct stylesheet
         std::unordered_map<std::size_t, std::size_t> font_reference_counts;
         std::unordered_map<std::size_t, std::size_t> number_format_reference_counts;
         std::unordered_map<std::size_t, std::size_t> protection_reference_counts;
-        
+
         fill_reference_counts[0]++;
         fill_reference_counts[1]++;
-        
+
         for (auto &impl : format_impls)
         {
             impl.id = new_id++;
-            
+
             if (impl.alignment_id.is_set())
             {
                 alignment_reference_counts[impl.alignment_id.get()]++;
             }
-            
+
             if (impl.border_id.is_set())
             {
                 border_reference_counts[impl.border_id.get()]++;
             }
-            
+
             if (impl.fill_id.is_set())
             {
                 fill_reference_counts[impl.fill_id.get()]++;
             }
-            
+
             if (impl.font_id.is_set())
             {
                 font_reference_counts[impl.font_id.get()]++;
             }
-            
+
             if (impl.number_format_id.is_set())
             {
                 number_format_reference_counts[impl.number_format_id.get()]++;
             }
-            
+
             if (impl.protection_id.is_set())
             {
                 protection_reference_counts[impl.protection_id.get()]++;
             }
         }
-        
+
         for (auto &name_impl_pair : style_impls)
         {
             auto &impl = name_impl_pair.second;
-            
+
             if (impl.alignment_id.is_set())
             {
                 alignment_reference_counts[impl.alignment_id.get()]++;
             }
-            
+
             if (impl.border_id.is_set())
             {
                 border_reference_counts[impl.border_id.get()]++;
             }
-            
+
             if (impl.fill_id.is_set())
             {
                 fill_reference_counts[impl.fill_id.get()]++;
             }
-            
+
             if (impl.font_id.is_set())
             {
                 font_reference_counts[impl.font_id.get()]++;
             }
-            
+
             if (impl.number_format_id.is_set())
             {
                 number_format_reference_counts[impl.number_format_id.get()]++;
             }
-            
+
             if (impl.protection_id.is_set())
             {
                 protection_reference_counts[impl.protection_id.get()]++;
             }
         }
-        
+
         auto alignment_id_map = garbage_collect(alignment_reference_counts, alignments);
         auto border_id_map = garbage_collect(border_reference_counts, borders);
         auto fill_id_map = garbage_collect(fill_reference_counts, fills);
@@ -323,22 +325,22 @@ struct stylesheet
             {
                 impl.alignment_id = alignment_id_map[impl.alignment_id.get()];
             }
-            
+
             if (impl.border_id.is_set())
             {
                 impl.border_id = border_id_map[impl.border_id.get()];
             }
-            
+
             if (impl.fill_id.is_set())
             {
                 impl.fill_id = fill_id_map[impl.fill_id.get()];
             }
-            
+
             if (impl.font_id.is_set())
             {
                 impl.font_id = font_id_map[impl.font_id.get()];
             }
-            
+
             if (impl.protection_id.is_set())
             {
                 impl.protection_id = protection_id_map[impl.protection_id.get()];
@@ -353,22 +355,22 @@ struct stylesheet
             {
                 impl.alignment_id = alignment_id_map[impl.alignment_id.get()];
             }
-            
+
             if (impl.border_id.is_set())
             {
                 impl.border_id = border_id_map[impl.border_id.get()];
             }
-            
+
             if (impl.fill_id.is_set())
             {
                 impl.fill_id = fill_id_map[impl.fill_id.get()];
             }
-            
+
             if (impl.font_id.is_set())
             {
                 impl.font_id = font_id_map[impl.font_id.get()];
             }
-            
+
             if (impl.protection_id.is_set())
             {
                 impl.protection_id = protection_id_map[impl.protection_id.get()];
@@ -395,7 +397,7 @@ struct stylesheet
         result.parent = this;
         result.id = id;
         result.references++;
-        
+
         if (id != pattern.id)
         {
             iter = format_impls.begin();
@@ -441,7 +443,7 @@ struct stylesheet
         }
         return find_or_create(new_format);
     }
-    
+
     format_impl *find_or_create_with(format_impl *pattern, const fill &new_fill, optional<bool> applied)
     {
         format_impl new_format = *pattern;
@@ -453,7 +455,7 @@ struct stylesheet
         }
         return find_or_create(new_format);
     }
-    
+
     format_impl *find_or_create_with(format_impl *pattern, const font &new_font, optional<bool> applied)
     {
         format_impl new_format = *pattern;
@@ -465,15 +467,25 @@ struct stylesheet
         }
         return find_or_create(new_format);
     }
-    
+
     format_impl *find_or_create_with(format_impl *pattern, const number_format &new_number_format, optional<bool> applied)
     {
         format_impl new_format = *pattern;
-        if (new_number_format.id() >= 164)
+        if (new_number_format.has_id() && new_number_format.id() < 164)
         {
-            find_or_add(number_formats, new_number_format);
+            new_format.number_format_id = new_number_format.id();
         }
-        new_format.number_format_id = new_number_format.id();
+        else
+        {
+            auto iter = std::find(number_formats.begin(), number_formats.end(), new_number_format);
+            if (iter == number_formats.end())
+            {
+                std::size_t new_id = next_custom_number_format_id();
+                iter = number_formats.emplace(number_formats.end(), new_number_format);
+                iter->id(new_id);
+            }
+            new_format.number_format_id = iter->id();
+        }
         new_format.number_format_applied = applied;
         if (pattern->references == 0)
         {
@@ -481,7 +493,7 @@ struct stylesheet
         }
         return find_or_create(new_format);
     }
-    
+
     format_impl *find_or_create_with(format_impl *pattern, const protection &new_protection, optional<bool> applied)
     {
         format_impl new_format = *pattern;
@@ -499,22 +511,22 @@ struct stylesheet
         return static_cast<std::size_t>(std::distance(style_names.begin(),
 	    std::find(style_names.begin(), style_names.end(), name)));
     }
-    
+
     void clear()
     {
 		conditional_format_impls.clear();
         format_impls.clear();
-        
+
         style_impls.clear();
         style_names.clear();
-        
+
         alignments.clear();
         borders.clear();
         fills.clear();
         fonts.clear();
         number_formats.clear();
         protections.clear();
-        
+
         colors.clear();
     }
 
@@ -532,11 +544,11 @@ struct stylesheet
 		return xlnt::conditional_format(&impl);
 	}
 
-    workbook *parent;
+    std::weak_ptr<workbook_impl> parent;
 
     bool operator==(const stylesheet& rhs) const
     {
-        // no equality on parent as there is only 1 stylesheet per borkbook hence would always be false
+        // no equality on parent as there is only 1 stylesheet per workbook hence would always be false
         return garbage_collection_enabled == rhs.garbage_collection_enabled
             && known_fonts_enabled == rhs.known_fonts_enabled
             && conditional_format_impls == rhs.conditional_format_impls
@@ -552,7 +564,12 @@ struct stylesheet
             && protections == rhs.protections
             && colors == rhs.colors;
     }
-    
+
+    bool operator!=(const stylesheet& rhs) const
+    {
+        return !(*this == rhs);
+    }
+
     bool garbage_collection_enabled = true;
     bool known_fonts_enabled = false;
 
@@ -568,7 +585,7 @@ struct stylesheet
     std::vector<font> fonts;
     std::vector<number_format> number_formats;
 	std::vector<protection> protections;
-    
+
     std::vector<color> colors;
 };
 

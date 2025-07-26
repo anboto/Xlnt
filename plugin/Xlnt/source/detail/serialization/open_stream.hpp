@@ -1,4 +1,5 @@
-// Copyright (c) 2017-2021 Thomas Fussell
+// Copyright (c) 2017-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +25,31 @@
 #pragma once
 
 #include <fstream>
-#include <iostream>
 #include <string>
+
+#include <xlnt/internal/features.hpp>
+
+#if XLNT_HAS_INCLUDE(<string_view>) && XLNT_HAS_FEATURE(U8_STRING_VIEW)
+  #include <string_view>
+#endif
 
 namespace xlnt {
 namespace detail {
+
+void open_stream(std::ifstream &stream, const std::string &path);
+
+void open_stream(std::ofstream &stream, const std::string &path);
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+void open_stream(std::ifstream &stream, std::u8string_view path);
+
+void open_stream(std::ofstream &stream, std::u8string_view path);
+#endif
 
 #ifdef _MSC_VER
 void open_stream(std::ifstream &stream, const std::wstring &path);
 
 void open_stream(std::ofstream &stream, const std::wstring &path);
-
-void open_stream(std::ifstream &stream, const std::string &path);
-
-void open_stream(std::ofstream &stream, const std::string &path);
-#else
-void open_stream(std::ifstream &stream, const std::string &path);
-
-void open_stream(std::ofstream &stream, const std::string &path);
 #endif
 
 } // namespace detail

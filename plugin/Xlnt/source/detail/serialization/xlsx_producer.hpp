@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,15 +24,19 @@
 
 #pragma once
 
-#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <type_traits>
 #include <vector>
 
-#include <xlnt/utils/numeric.hpp>
 #include <detail/constants.hpp>
 #include <detail/external/include_libstudxml.hpp>
+#include <detail/serialization/serialisation_helpers.hpp>
+#include <xlnt/internal/features.hpp>
+
+#if XLNT_HAS_INCLUDE(<string_view>) && XLNT_HAS_FEATURE(U8_STRING_VIEW)
+  #include <string_view>
+#endif
 
 namespace xml {
 class serializer;
@@ -73,10 +78,17 @@ public:
 
     void write(std::ostream &destination, const std::string &password);
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    void write(std::ostream &destination, std::u8string_view password);
+#endif
+
 private:
     friend class xlnt::streaming_workbook_writer;
 
     void open(std::ostream &destination);
+
+    template <typename T>
+    void write_internal(std::ostream &destination, const T &password);
 
     cell add_cell(const cell_reference &ref);
 
@@ -182,7 +194,7 @@ private:
     template <typename T, typename std::enable_if<std::is_floating_point<T>::value, T>::type* = nullptr>
     void write_attribute(const std::string &name, T value)
     {
-        current_part_serializer_->attribute(name, converter_.serialise(value));
+        current_part_serializer_->attribute(name, xlnt::detail::serialise(value));
     }
 
     template <typename T, typename std::enable_if<std::is_integral<T>::value, T>::type* = nullptr>
@@ -202,7 +214,7 @@ private:
     template <typename T, typename std::enable_if<std::is_floating_point<T>::value, T>::type* = nullptr>
     void write_attribute(const xml::qname &name, T value)
     {
-        current_part_serializer_->attribute(name, converter_.serialise(value));
+        current_part_serializer_->attribute(name, xlnt::detail::serialise(value));
     }
 
     template <typename T, typename std::enable_if<std::is_integral<T>::value, T>::type* = nullptr>
@@ -237,10 +249,9 @@ private:
 
     std::unique_ptr<detail::cell_impl> streaming_cell_;
 
-    detail::cell_impl *current_cell_;
+    detail::cell_impl *current_cell_ = nullptr;
 
-    detail::worksheet_impl *current_worksheet_;
-    detail::number_serialiser converter_;
+    detail::worksheet_impl *current_worksheet_ = nullptr;
 };
 
 } // namespace detail

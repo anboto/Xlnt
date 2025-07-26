@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,13 +27,14 @@
 #include <string>
 #include <unordered_map>
 
-#include <xlnt/xlnt_config.hpp>
+#include <detail/xlnt_config_impl.hpp>
+
 #include <xlnt/cell/index_types.hpp>
 #include <xlnt/utils/path.hpp>
 
 namespace xlnt {
 
-struct XLNT_API constants
+struct XLNT_API_INTERNAL constants
 {
     /// <summary>
     /// Returns the lowest allowable row index in a worksheet.
@@ -53,6 +55,14 @@ struct XLNT_API constants
     /// Returns the largest allowable column index in a worksheet.
     /// </summary>
     static const column_t max_column();
+
+    /// <summary>
+    /// Returns the maximum amount of elements that functions like std::vector::reserve (or other containers) are allowed to allocate.
+    /// Information like a "count" is often saved in XLSX files and can be used by std::vector::reserve (or other containers)
+    /// to allocate the memory right away and thus improve performance. However, malicious or broken files
+    /// might then cause XLNT to allocate extreme amounts of memory. This function sets a limit to protect against such issues.
+    /// </summary>
+    static size_t max_elements_for_reserve();
 
     /// <summary>
     /// Returns the URI of the directory containing package properties.
@@ -129,10 +139,20 @@ struct XLNT_API constants
     /// </summary>
     static const std::unordered_map<std::string, std::string> &namespaces();
 
+#if defined(__GNUC__) && __GNUC__ >= 13
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wdangling-reference"
+#endif
+
     /// <summary>
     /// Returns the namespace URI from a namespace name.
     /// </summary>
     static const std::string &ns(const std::string &id);
+
+#if defined(__GNUC__) && __GNUC__ >= 13
+# pragma GCC diagnostic pop
+#endif
+
 };
 
 } // namespace xlnt

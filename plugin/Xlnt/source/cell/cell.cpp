@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +24,8 @@
 // @author: see AUTHORS file
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
-#include <sstream>
 
 #include <xlnt/cell/cell.hpp>
 #include <xlnt/cell/cell_reference.hpp>
@@ -57,16 +58,15 @@
 #include <detail/implementations/hyperlink_impl.hpp>
 #include <detail/implementations/stylesheet.hpp>
 #include <detail/implementations/worksheet_impl.hpp>
-#include <xlnt/utils/numeric.hpp>
+#include <detail/serialization/serialisation_helpers.hpp>
 
 namespace {
 
 std::pair<bool, double> cast_numeric(const std::string &s)
 {
-    xlnt::detail::number_serialiser ser;
-    ptrdiff_t len_convert;
-    double result = ser.deserialise(s, &len_convert);
-    return (len_convert != static_cast<ptrdiff_t>(s.size()))
+    size_t len_convert = 0;
+    double result = xlnt::detail::deserialise(s, &len_convert);
+    return (len_convert != s.size())
         ? std::make_pair(false, 0.0)
         : std::make_pair(true, result);
 }
@@ -109,8 +109,8 @@ std::pair<bool, xlnt::time> cast_time(const std::string &s)
     }
 
     std::vector<double> numeric_components;
-    xlnt::detail::number_serialiser ser;
-    for (auto component : time_components)
+
+    for (const auto & component : time_components)
     {
         if (component.empty() || (component.substr(0, component.find('.')).size() > 2))
         {
@@ -124,7 +124,7 @@ std::pair<bool, xlnt::time> cast_time(const std::string &s)
                 return {false, result};
             }
         }
-        auto numeric = ser.deserialise(component);
+        auto numeric = xlnt::detail::deserialise(component);
 
         numeric_components.push_back(numeric);
     }
@@ -351,14 +351,26 @@ cell_reference cell::reference() const
     return {d_->column_, d_->row_};
 }
 
+bool cell::compare(const cell &other, bool compare_by_reference) const
+{
+    if (compare_by_reference)
+    {
+        return d_ == other.d_;
+    }
+    else
+    {
+        return *d_ == *other.d_;
+    }
+}
+
 bool cell::operator==(const cell &comparand) const
 {
-    return d_ == comparand.d_;
+    return compare(comparand, true);
 }
 
 bool cell::operator!=(const cell &comparand) const
 {
-    return d_ != comparand.d_;
+    return !(*this == comparand);
 }
 
 cell &cell::operator=(const cell &rhs) = default;
@@ -524,12 +536,12 @@ const worksheet cell::worksheet() const
     return xlnt::worksheet(d_->parent_);
 }
 
-workbook &cell::workbook()
+workbook cell::workbook()
 {
     return worksheet().workbook();
 }
 
-const workbook &cell::workbook() const
+const workbook cell::workbook() const
 {
     return worksheet().workbook();
 }
@@ -602,67 +614,67 @@ void cell::clear_value()
 }
 
 template <>
-XLNT_API bool cell::value() const
+bool cell::value() const
 {
     return d_->value_numeric_ != 0.0;
 }
 
 template <>
-XLNT_API int cell::value() const
+int cell::value() const
 {
     return static_cast<int>(d_->value_numeric_);
 }
 
 template <>
-XLNT_API long long int cell::value() const
+long long int cell::value() const
 {
     return static_cast<long long int>(d_->value_numeric_);
 }
 
 template <>
-XLNT_API unsigned int cell::value() const
+unsigned int cell::value() const
 {
     return static_cast<unsigned int>(d_->value_numeric_);
 }
 
 template <>
-XLNT_API unsigned long long cell::value() const
+unsigned long long cell::value() const
 {
     return static_cast<unsigned long long>(d_->value_numeric_);
 }
 
 template <>
-XLNT_API float cell::value() const
+float cell::value() const
 {
     return static_cast<float>(d_->value_numeric_);
 }
 
 template <>
-XLNT_API double cell::value() const
+double cell::value() const
 {
     return static_cast<double>(d_->value_numeric_);
 }
 
 template <>
-XLNT_API time cell::value() const
+time cell::value() const
 {
     return time::from_number(d_->value_numeric_);
 }
 
 template <>
-XLNT_API datetime cell::value() const
+datetime cell::value() const
 {
     return datetime::from_number(d_->value_numeric_, base_date());
 }
 
 template <>
-XLNT_API date cell::value() const
+date cell::value() const
 {
     return date::from_number(static_cast<int>(d_->value_numeric_), base_date());
 }
 
 template <>
-XLNT_API timedelta cell::value() const
+timedelta cell::value() const
 {
     return timedelta::from_number(d_->value_numeric_);
 }
@@ -704,13 +716,13 @@ void cell::protection(const class protection &protection_)
 }
 
 template <>
-XLNT_API std::string cell::value() const
+std::string cell::value() const
 {
     return value<rich_text>().plain_text();
 }
 
 template <>
-XLNT_API rich_text cell::value() const
+rich_text cell::value() const
 {
     if (data_type() == cell::type::shared_string)
     {
@@ -779,7 +791,17 @@ bool operator==(const cell &cell, std::nullptr_t)
     return nullptr == cell;
 }
 
-XLNT_API std::ostream &operator<<(std::ostream &stream, const xlnt::cell &cell)
+bool operator!=(std::nullptr_t, const cell &cell)
+{
+    return !(nullptr == cell);
+}
+
+bool operator!=(const cell &cell, std::nullptr_t)
+{
+    return nullptr != cell;
+}
+
+std::ostream &operator<<(std::ostream &stream, const xlnt::cell &cell)
 {
     return stream << cell.to_string();
 }
@@ -954,7 +976,7 @@ bool cell::has_hyperlink() const
 
 // comment
 
-bool cell::has_comment()
+bool cell::has_comment() const
 {
     return d_->comment_.is_set();
 }
@@ -968,7 +990,7 @@ void cell::clear_comment()
     }
 }
 
-class comment cell::comment()
+class comment cell::comment() const
 {
     if (!has_comment())
     {

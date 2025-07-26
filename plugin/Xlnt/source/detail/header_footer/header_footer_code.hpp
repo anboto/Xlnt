@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,13 +28,13 @@
 #include <xlnt/cell/rich_text.hpp>
 #include <xlnt/utils/optional.hpp>
 #include <xlnt/worksheet/header_footer.hpp>
-#include <xlnt/utils/numeric.hpp>
+#include <detail/serialization/serialisation_helpers.hpp>
 
 namespace xlnt {
 namespace detail {
 
-std::array<xlnt::optional<xlnt::rich_text>, 3> decode_header_footer(const std::string &hf_string, const number_serialiser &serialiser);
-std::string encode_header_footer(const rich_text &t, header_footer::location where, const number_serialiser& serialiser);
+std::array<xlnt::optional<xlnt::rich_text>, 3> decode_header_footer(const std::string &hf_string);
+std::string encode_header_footer(const rich_text &t, header_footer::location where);
 
 } // namespace detail
 } // namespace xlnt

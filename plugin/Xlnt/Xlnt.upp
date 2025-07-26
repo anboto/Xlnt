@@ -11,25 +11,32 @@ options
 	-DHAVE_ZLIB,
 	-DXLNT_STATIC;
 
+options(MSC) /utf-8;
+
 include
 	include,
 	third-party\libstudxml,
 	source,
 	third-party\utfcpp,
-	third-party\miniz;
+	third-party\miniz,
+	third-party/fast_float/include,
+	third-party/fmt/include;
 
 file
 	include\xlnt\xlnt.hpp,
 	include\xlnt\worksheet\cell_iterator.hpp,
 	third-party\utfcpp\utf8.h,
+	source\worksheet\selection.cpp,
 	third-party\libstudxml\libstudxml\details\genx\char-props.c,
 	third-party\libstudxml\libstudxml\details\genx\genx.c,
 	third-party\libstudxml\libstudxml\details\genx\genx.h,
 	third-party\libstudxml\libstudxml\details\genx\LICENSE,
+	source\detail\utils\string_helpers.cpp,
 	third-party\libstudxml\libstudxml\details\genx\README,
 	third-party\libstudxml\libstudxml\details\expat\ascii.h,
 	third-party\libstudxml\libstudxml\details\expat\asciitab.h,
 	third-party\libstudxml\libstudxml\details\expat\config.h,
+	source\workbook\named_range.cpp,
 	third-party\libstudxml\libstudxml\details\expat\COPYING,
 	third-party\libstudxml\libstudxml\details\expat\expat.h,
 	third-party\libstudxml\libstudxml\details\expat\expat_external.h,
@@ -132,6 +139,8 @@ file
 	source\detail\serialization\vector_streambuf.cpp,
 	source\detail\serialization\vector_streambuf.hpp,
 	source\detail\serialization\xlsx_consumer.cpp,
+	source\detail\serialization\serialisation_helpers.cpp,
+	source\detail\serialization\xlsx_consumer.cpp,
 	source\detail\serialization\xlsx_consumer.hpp,
 	source\detail\serialization\xlsx_producer.cpp,
 	source\detail\serialization\xlsx_producer.hpp,
@@ -140,7 +149,6 @@ file
 	source\detail\number_format\number_formatter.cpp,
 	source\detail\number_format\number_formatter.hpp,
 	source\detail\header_footer\header_footer_code.hpp,
-	source\detail\implementations\cell_impl.cpp,
 	source\detail\implementations\cell_impl.hpp,
 	source\detail\implementations\conditional_format_impl.hpp,
 	source\detail\implementations\format_impl.hpp,

@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,13 +28,14 @@
 #include <xlnt/xlnt_config.hpp>
 #include <xlnt/cell/cell_reference.hpp>
 #include <xlnt/cell/index_types.hpp>
+#include <xlnt/utils/optional.hpp>
 
 namespace xlnt {
 
 /// <summary>
 /// Enumeration of possible states of a pane
 /// </summary>
-enum class XLNT_API pane_state
+enum class pane_state
 {
     frozen,
     frozen_split,
@@ -43,7 +45,7 @@ enum class XLNT_API pane_state
 /// <summary>
 /// Enumeration of the four quadrants of a worksheet
 /// </summary>
-enum class XLNT_API pane_corner
+enum class pane_corner
 {
     top_left,
     top_right,
@@ -92,6 +94,14 @@ struct XLNT_API pane
             && active_pane == rhs.active_pane
             && y_split == rhs.y_split
             && x_split == rhs.x_split;
+    }
+
+    /// <summary>
+    /// Returns the negation of the equality operator.
+    /// </summary>
+    bool operator!=(const pane &rhs) const
+    {
+        return !(*this == rhs);
     }
 };
 

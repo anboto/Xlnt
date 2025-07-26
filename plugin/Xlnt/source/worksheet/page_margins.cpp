@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -97,6 +98,11 @@ bool page_margins::operator==(const page_margins &rhs) const
         && detail::float_equals(right_, rhs.right_)
         && detail::float_equals(header_, rhs.header_)
         && detail::float_equals(footer_, rhs.footer_);
+}
+
+bool page_margins::operator!=(const page_margins &rhs) const
+{
+    return !(*this == rhs);
 }
 
 } // namespace xlnt

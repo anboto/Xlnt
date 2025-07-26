@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -142,9 +143,9 @@ public:
 
 private:
     std::size_t offset_ = 0;
-    const std::vector<T> *vector_;
-    const T *data_;
-    const std::size_t size_;
+    const std::vector<T> *vector_ = nullptr;
+    const T *data_ = nullptr;
+    const std::size_t size_ = 0;
 };
 
 template<typename T>
@@ -177,7 +178,7 @@ public:
     {
         return *data_;
     }
-    
+
     // Make the bytes of the data pointed to by this writer equivalent to those in the given vector
     // sizeof(U) should be a multiple of sizeof(T)
     template<typename U>
@@ -280,7 +281,7 @@ public:
     }
 
 private:
-    std::vector<T> *data_;
+    std::vector<T> *data_ = nullptr;
     std::size_t offset_ = 0;
 };
 
@@ -290,7 +291,7 @@ std::vector<byte> string_to_bytes(const std::basic_string<T> &string)
     std::vector<byte> bytes;
     binary_writer<byte> writer(bytes);
     writer.assign(string);
-    
+
     return bytes;
 }
 

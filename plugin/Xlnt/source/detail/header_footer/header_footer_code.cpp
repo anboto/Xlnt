@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +22,14 @@
 // @license: http://www.opensource.org/licenses/mit-license.php
 // @author: see AUTHORS file
 
+#include <algorithm>
+
 #include <detail/header_footer/header_footer_code.hpp>
-//#include <detail/numeric_utils.hpp>
 
 namespace xlnt {
 namespace detail {
 
-std::array<xlnt::optional<xlnt::rich_text>, 3> decode_header_footer(const std::string &hf_string, const number_serialiser &serialiser)
+std::array<xlnt::optional<xlnt::rich_text>, 3> decode_header_footer(const std::string &hf_string)
 {
     std::array<xlnt::optional<xlnt::rich_text>, 3> result;
 
@@ -216,7 +218,7 @@ std::array<xlnt::optional<xlnt::rich_text>, 3> decode_header_footer(const std::s
         tokens.push_back(token);
     }
 
-    const auto parse_section = [&tokens, &result, &serialiser](hf_code code) {
+    const auto parse_section = [&tokens, &result](hf_code code) {
         std::vector<hf_code> end_codes{hf_code::left_section, hf_code::center_section, hf_code::right_section};
         end_codes.erase(std::find(end_codes.begin(), end_codes.end(), code));
 
@@ -297,7 +299,7 @@ std::array<xlnt::optional<xlnt::rich_text>, 3> decode_header_footer(const std::s
                     current_run.second = xlnt::font();
                 }
 
-                current_run.second.get().size(serialiser.deserialise(current_token.value));
+                current_run.second.get().size(xlnt::detail::deserialise(current_token.value));
 
                 break;
             }
@@ -460,7 +462,7 @@ std::array<xlnt::optional<xlnt::rich_text>, 3> decode_header_footer(const std::s
     return result;
 }
 
-std::string encode_header_footer(const rich_text &t, header_footer::location where, const number_serialiser &serialiser)
+std::string encode_header_footer(const rich_text &t, header_footer::location where)
 {
     const auto location_code_map =
         std::unordered_map<header_footer::location,
@@ -505,7 +507,7 @@ std::string encode_header_footer(const rich_text &t, header_footer::location whe
             if (run.second.get().has_size())
             {
                 encoded.push_back('&');
-                encoded.append(serialiser.serialise(run.second.get().size()));
+                encoded.append(xlnt::detail::serialise(run.second.get().size()));
             }
             if (run.second.get().underlined())
             {

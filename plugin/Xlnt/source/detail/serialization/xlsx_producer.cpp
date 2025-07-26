@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +25,6 @@
 #include <cmath>
 #include <numeric> // for std::accumulate
 #include <string>
-#include <type_traits>
 #include <unordered_set>
 
 #include <xlnt/cell/cell.hpp>
@@ -45,6 +45,8 @@
 #include <detail/serialization/vector_streambuf.hpp>
 #include <detail/serialization/xlsx_producer.hpp>
 #include <detail/serialization/zstream.hpp>
+#include <detail/serialization/parsers.hpp>
+#include <detail/utils/string_helpers.hpp>
 
 namespace {
 
@@ -441,9 +443,9 @@ void xlsx_producer::write_workbook(const relationship &rel)
         {
             num_visible++;
         }
-        
+
         auto title_ref = "'" + ws.title() + "'!";
-        
+
         if (ws.has_auto_filter())
         {
             defined_name name;
@@ -453,7 +455,7 @@ void xlsx_producer::write_workbook(const relationship &rel)
             name.value = title_ref + range_reference::make_absolute(ws.auto_filter()).to_string();
             defined_names.push_back(name);
         }
-        
+
         if (ws.has_print_area())
         {
             defined_name name;
@@ -463,14 +465,14 @@ void xlsx_producer::write_workbook(const relationship &rel)
             name.value = title_ref + range_reference::make_absolute(ws.print_area()).to_string();
             defined_names.push_back(name);
         }
-        
+
         if (ws.has_print_titles())
         {
             defined_name name;
             name.sheet_id = ws.id();
             name.name = "_xlnm.Print_Titles";
             name.hidden = false;
-            
+
             auto cols = ws.print_title_cols();
             if (cols.is_set())
             {
@@ -660,7 +662,7 @@ void xlsx_producer::write_workbook(const relationship &rel)
     if (!defined_names.empty())
     {
         write_start_element(xmlns, "definedNames");
-        for (auto name : defined_names)
+        for (const auto & name : defined_names)
         {
             write_start_element(xmlns, "definedName");
             write_attribute("name", name.name);
@@ -668,7 +670,11 @@ void xlsx_producer::write_workbook(const relationship &rel)
             {
                 write_attribute("hidden", write_bool(true));
             }
-            write_attribute("localSheetId", std::to_string(name.sheet_id - 1)); // 0-indexed for some reason
+
+            if (name.sheet_id.is_set())
+            {
+                write_attribute("localSheetId", std::to_string(name.sheet_id.get() - 1)); // 0-indexed for some reason
+            }
             write_characters(name.value);
             write_end_element(xmlns, "definedName");
         }
@@ -734,7 +740,7 @@ void xlsx_producer::write_workbook(const relationship &rel)
 
         auto child_target_path = child_rel.target().path();
         path archive_path(child_rel.source().path().parent().append(child_target_path));
-        
+
         // write binary
         if (child_rel.type() == relationship_type::vbaproject)
         {
@@ -2357,7 +2363,7 @@ void xlsx_producer::write_worksheet(const relationship &rel)
 
     write_start_element(xmlns, "dimension");
     const auto dimension = ws.calculate_dimension();
-    write_attribute("ref", dimension.is_single_cell() ? dimension.top_left().to_string() : dimension.to_string());
+    write_attribute("ref", dimension.to_string());
     write_end_element(xmlns, "dimension");
 
     if (ws.has_view())
@@ -2365,7 +2371,6 @@ void xlsx_producer::write_worksheet(const relationship &rel)
         write_start_element(xmlns, "sheetViews");
         write_start_element(xmlns, "sheetView");
 
-        const auto wb_view = source_.view();
         const auto view = ws.view();
 
         if (!view.show_grid_lines())
@@ -2373,8 +2378,17 @@ void xlsx_producer::write_worksheet(const relationship &rel)
             write_attribute("showGridLines", write_bool(view.show_grid_lines()));
         }
 
-        if ((wb_view.active_tab.is_set() && (ws.id() - 1) == wb_view.active_tab.get())
-            || (!wb_view.active_tab.is_set() && ws.id() == 1))
+        if (source_.has_view())
+        {
+            const auto wb_view = source_.view();
+
+            if ((wb_view.active_tab.is_set() && (ws.id() - 1) == wb_view.active_tab.get())
+                || (!wb_view.active_tab.is_set() && ws.id() == 1))
+            {
+                write_attribute("tabSelected", write_bool(true));
+            }
+        }
+        else if (ws.id() == 1)
         {
             write_attribute("tabSelected", write_bool(true));
         }
@@ -2389,6 +2403,11 @@ void xlsx_producer::write_worksheet(const relationship &rel)
         }
 
         write_attribute("workbookViewId", view.id());
+
+        if (view.zoom_scale() != 100)
+        {
+            write_attribute("zoomScale", view.zoom_scale());
+        }
 
         if (view.has_pane())
         {
@@ -2434,8 +2453,8 @@ void xlsx_producer::write_worksheet(const relationship &rel)
 
             if (current_selection.has_sqref())
             {
-                const auto sqref = current_selection.sqref();
-                write_attribute("sqref", sqref.is_single_cell() ? sqref.top_left().to_string() : sqref.to_string());
+                std::string refs = detail::join(current_selection.sqrefs(), ' ');
+                write_attribute("sqref", refs);
             }
 
             if (current_selection.pane() != pane_corner::top_left)
@@ -2498,7 +2517,7 @@ void xlsx_producer::write_worksheet(const relationship &rel)
         if (props.width.is_set())
         {
             double width = (props.width.get() * 7 + 5) / 7;
-            write_attribute("width", converter_.serialise(width));
+            write_attribute("width", xlnt::detail::serialise(width));
         }
 
         if (props.best_fit)
@@ -2607,7 +2626,7 @@ void xlsx_producer::write_worksheet(const relationship &rel)
             if (props.height.is_set())
             {
                 auto height = props.height.get();
-                write_attribute("ht", converter_.serialise(height));
+                write_attribute("ht", xlnt::detail::serialise(height));
             }
 
             if (props.hidden)
@@ -2734,7 +2753,7 @@ void xlsx_producer::write_worksheet(const relationship &rel)
 
                 case cell::type::number:
                     write_start_element(xmlns, "v");
-                    write_characters(converter_.serialise(cell.value<double>()));
+                    write_characters(xlnt::detail::serialise(cell.value<double>()));
                     write_end_element(xmlns, "v");
                     break;
 
@@ -2918,7 +2937,7 @@ void xlsx_producer::write_worksheet(const relationship &rel)
         {
             write_attribute("verticalDpi", ws.page_setup().vertical_dpi_.get());
         }
-        
+
         if (ps.has_paper_size())
         {
             write_attribute("paperSize", static_cast<std::size_t>(ps.paper_size()));
@@ -2965,26 +2984,26 @@ void xlsx_producer::write_worksheet(const relationship &rel)
             {
                 if (hf.has_odd_even_header(location))
                 {
-                    odd_header.append(encode_header_footer(hf.odd_header(location), location, converter_));
-                    even_header.append(encode_header_footer(hf.even_header(location), location, converter_));
+                    odd_header.append(encode_header_footer(hf.odd_header(location), location));
+                    even_header.append(encode_header_footer(hf.even_header(location), location));
                 }
 
                 if (hf.has_odd_even_footer(location))
                 {
-                    odd_footer.append(encode_header_footer(hf.odd_footer(location), location, converter_));
-                    even_footer.append(encode_header_footer(hf.even_footer(location), location, converter_));
+                    odd_footer.append(encode_header_footer(hf.odd_footer(location), location));
+                    even_footer.append(encode_header_footer(hf.even_footer(location), location));
                 }
             }
             else
             {
                 if (hf.has_header(location))
                 {
-                    odd_header.append(encode_header_footer(hf.header(location), location, converter_));
+                    odd_header.append(encode_header_footer(hf.header(location), location));
                 }
 
                 if (hf.has_footer(location))
                 {
-                    odd_footer.append(encode_header_footer(hf.footer(location), location, converter_));
+                    odd_footer.append(encode_header_footer(hf.footer(location), location));
                 }
             }
 
@@ -2992,12 +3011,12 @@ void xlsx_producer::write_worksheet(const relationship &rel)
             {
                 if (hf.has_first_page_header(location))
                 {
-                    first_header.append(encode_header_footer(hf.first_page_header(location), location, converter_));
+                    first_header.append(encode_header_footer(hf.first_page_header(location), location));
                 }
 
                 if (hf.has_first_page_footer(location))
                 {
-                    first_footer.append(encode_header_footer(hf.first_page_footer(location), location, converter_));
+                    first_footer.append(encode_header_footer(hf.first_page_footer(location), location));
                 }
             }
         }
@@ -3237,7 +3256,8 @@ void xlsx_producer::write_vml_drawings(const relationship &rel, worksheet ws, co
         index_pos--;
     }
 
-    auto file_index = std::stoull(filename.substr(index_pos + 1));
+    size_t file_index = 0;
+    detail::parse(filename.substr(index_pos + 1), file_index);
 
     write_attribute("data", file_index);
     write_end_element(xmlns_o, "idmap");
@@ -3479,7 +3499,7 @@ void xlsx_producer::write_color(const xlnt::color &color)
     }
     if (color.has_tint())
     {
-        write_attribute("tint", converter_.serialise(color.tint()));
+        write_attribute("tint", xlnt::detail::serialise(color.tint()));
     }
 }
 

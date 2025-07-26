@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +25,12 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include <detail/xlnt_config_impl.hpp>
+
 #include <xlnt/utils/datetime.hpp>
-#include <xlnt/utils/numeric.hpp>
+#include <detail/serialization/serialisation_helpers.hpp>
 
 namespace xlnt {
 namespace detail {
@@ -535,8 +537,7 @@ enum class format_locale
     system_default_long_date = 0xF800
 };
 
-// TODO this really shouldn't be exported...
-struct XLNT_API format_condition
+struct XLNT_API_INTERNAL format_condition
 {
     enum class condition_type
     {
@@ -674,7 +675,7 @@ private:
     std::vector<format_code> codes_;
 };
 
-class XLNT_API number_formatter
+class XLNT_API_INTERNAL number_formatter
 {
 public:
     number_formatter(const std::string &format_string, xlnt::calendar calendar);
@@ -694,7 +695,6 @@ private:
     number_format_parser parser_;
     std::vector<format_code> format_;
     xlnt::calendar calendar_;
-    xlnt::detail::number_serialiser serialiser_;
 };
 
 } // namespace detail

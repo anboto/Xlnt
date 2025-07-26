@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -306,6 +307,11 @@ bool header_footer::operator==(const header_footer &rhs) const
         && odd_footers_ == rhs.odd_footers_
         && even_footers_ == rhs.even_footers_
         && first_footers_ == rhs.first_footers_;
+}
+
+bool header_footer::operator!=(const header_footer &rhs) const
+{
+    return !(*this == rhs);
 }
 
 } // namespace xlnt

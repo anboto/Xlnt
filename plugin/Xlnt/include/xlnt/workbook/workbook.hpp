@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,17 +25,20 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <iterator>
-#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include <xlnt/xlnt_config.hpp>
-#include <xlnt/cell/rich_text.hpp>
+#include <xlnt/internal/features.hpp>
+
+#if XLNT_HAS_INCLUDE(<string_view>) && XLNT_HAS_FEATURE(U8_STRING_VIEW)
+  #include <string_view>
+#endif
 
 namespace xlnt {
 
@@ -80,6 +84,7 @@ namespace detail {
 
 struct stylesheet;
 struct workbook_impl;
+struct worksheet_impl;
 class xlsx_consumer;
 class xlsx_producer;
 
@@ -91,6 +96,15 @@ class xlsx_producer;
 class XLNT_API workbook
 {
 public:
+    /// <summary>
+    /// The method for cloning workbooks.
+    /// </summary>
+    enum class clone_method
+    {
+        deep_copy,
+        shallow_copy
+    };
+
     /// <summary>
     /// typedef for the iterator used for iterating through this workbook
     /// (non-const) in a range-based for loop.
@@ -141,6 +155,13 @@ public:
     /// </summary>
     workbook(const xlnt::path &file, const std::string &password);
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// load the encrpyted xlsx file at path
+    /// </summary>
+    workbook(const xlnt::path &file, std::u8string_view password);
+#endif
+
     /// <summary>
     /// construct the workbook from any data stream where the data is the binary form of a workbook
     /// </summary>
@@ -151,22 +172,36 @@ public:
     /// </summary>
     workbook(std::istream &data, const std::string &password);
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// construct the workbook from any data stream where the data is the binary form of an encrypted workbook
+    /// </summary>
+    workbook(std::istream &data, std::u8string_view password);
+#endif
+
     /// <summary>
     /// Move constructor. Constructs a workbook from existing workbook, other.
     /// </summary>
-    workbook(workbook &&other);
+    workbook(workbook &&other) = default;
 
     /// <summary>
     /// Copy constructor. Constructs this workbook from existing workbook, other.
+    /// Creates a shallow copy, copying the workbook's internal pointers.
     /// </summary>
-    workbook(const workbook &other);
+    workbook(const workbook &other) = default;
 
     /// <summary>
     /// Destroys this workbook, deallocating all internal storage space. Any pimpl
     /// wrapper classes (e.g. cell) pointing into this workbook will be invalid
     /// after this is executed.
     /// </summary>
-    ~workbook();
+    ~workbook() = default;
+
+    /// <summary>
+    /// Creates a clone of this workbook. A shallow copy will copy the workbook's internal pointers,
+    /// while a deep copy will copy all the internal structures and create a full clone of the workbook.
+    /// </summary>
+    workbook clone(clone_method method) const;
 
     // Worksheets
 
@@ -262,7 +297,12 @@ public:
     /// <summary>
     /// Returns the index of the given worksheet. The worksheet must be owned by this workbook.
     /// </summary>
-    std::size_t index(worksheet worksheet);
+    std::size_t index(worksheet worksheet) const;
+
+    /// <summary>
+    /// Moves a sheet to a new position defined. The worksheet must be owned by this workbook.
+    /// </summary>
+    void move_sheet(worksheet worksheet, std::size_t newIndex);
 
     // remove worksheets
 
@@ -480,6 +520,14 @@ public:
     /// </summary>
     void save(std::vector<std::uint8_t> &data, const std::string &password) const;
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and saves the bytes into byte vector data.
+    /// </summary>
+    void save(std::vector<std::uint8_t> &data, std::u8string_view password) const;
+#endif
+
     /// <summary>
     /// Serializes the workbook into an XLSX file and saves the data into a file
     /// named filename.
@@ -491,6 +539,20 @@ public:
     /// and loads the bytes into a file named filename.
     /// </summary>
     void save(const std::string &filename, const std::string &password) const;
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Serializes the workbook into an XLSX file and saves the data into a file
+    /// named filename.
+    /// </summary>
+    void save(std::u8string_view filename) const;
+
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and loads the bytes into a file named filename.
+    /// </summary>
+    void save(std::u8string_view filename, std::u8string_view password) const;
+#endif
 
 #ifdef _MSC_VER
     /// <summary>
@@ -518,6 +580,14 @@ public:
     /// </summary>
     void save(const xlnt::path &filename, const std::string &password) const;
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and loads the bytes into a file named filename.
+    /// </summary>
+    void save(const xlnt::path &filename, std::u8string_view password) const;
+#endif
+
     /// <summary>
     /// Serializes the workbook into an XLSX file and saves the data into stream.
     /// </summary>
@@ -528,6 +598,14 @@ public:
     /// and loads the bytes into the given stream.
     /// </summary>
     void save(std::ostream &stream, const std::string &password) const;
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and loads the bytes into the given stream.
+    /// </summary>
+    void save(std::ostream &stream, std::u8string_view password) const;
+#endif
 
     /// <summary>
     /// Interprets byte vector data as an XLSX file and sets the content of this
@@ -541,6 +619,14 @@ public:
     /// </summary>
     void load(const std::vector<std::uint8_t> &data, const std::string &password);
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Interprets byte vector data as an XLSX file encrypted with the
+    /// given password and sets the content of this workbook to match that file.
+    /// </summary>
+    void load(const std::vector<std::uint8_t> &data, std::u8string_view password);
+#endif
+
     /// <summary>
     /// Interprets file with the given filename as an XLSX file and sets
     /// the content of this workbook to match that file.
@@ -552,6 +638,21 @@ public:
     /// given password and sets the content of this workbook to match that file.
     /// </summary>
     void load(const std::string &filename, const std::string &password);
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Interprets file with the given filename as an XLSX file and sets
+    /// the content of this workbook to match that file.
+    /// </summary>
+    void load(std::u8string_view filename);
+
+    /// <summary>
+    /// Interprets file with the given filename as an XLSX file encrypted with the
+    /// given password and sets the content of this workbook to match that file.
+    /// </summary>
+    void load(std::u8string_view filename, std::u8string_view password);
+#endif
+
 
 #ifdef _MSC_VER
     /// <summary>
@@ -579,6 +680,14 @@ public:
     /// </summary>
     void load(const xlnt::path &filename, const std::string &password);
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Interprets file with the given filename as an XLSX file encrypted with the
+    /// given password and sets the content of this workbook to match that file.
+    /// </summary>
+    void load(const xlnt::path &filename, std::u8string_view password);
+#endif
+
     /// <summary>
     /// Interprets data in stream as an XLSX file and sets the content of this
     /// workbook to match that file.
@@ -590,6 +699,14 @@ public:
     /// and sets the content of this workbook to match that file.
     /// </summary>
     void load(std::istream &stream, const std::string &password);
+
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+    /// <summary>
+    /// Interprets data in stream as an XLSX file encrypted with the given password
+    /// and sets the content of this workbook to match that file.
+    /// </summary>
+    void load(std::istream &stream, std::u8string_view password);
+#endif
 
     // View
 
@@ -826,13 +943,26 @@ public:
     /// </summary>
     void calculation_properties(const class calculation_properties &props);
 
+    /// <summary>
+    /// Returns true if this workbook is equal to other. If compare_by_reference is true, the comparison
+    /// will only check that both workbook instances point to the same internal workbook. Otherwise,
+    /// if compare_by_reference is false, all workbook properties except for the abs_path are compared.
+    /// </summary>
+    bool compare(const workbook &other, bool compare_by_reference) const;
+
     // Operators
 
     /// <summary>
     /// Set the contents of this workbook to be equal to those of "other".
-    /// Other is passed as value to allow for copy-swap idiom.
+    /// Creates a shallow copy, copying the workbook's internal pointers.
     /// </summary>
-    workbook &operator=(workbook other);
+    workbook &operator=(const workbook &other) = default;
+
+    /// <summary>
+    /// Set the contents of this workbook to be equal to those of "other"
+    /// by consuming (moving) the "other" instance.
+    /// </summary>
+    workbook &operator=(workbook &&other) = default;
 
     /// <summary>
     /// Return the worksheet with a title of "name".
@@ -861,12 +991,106 @@ private:
     friend class worksheet;
     friend class detail::xlsx_consumer;
     friend class detail::xlsx_producer;
+    friend struct detail::worksheet_impl;
 
     /// <summary>
     /// Private constructor. Constructs a workbook from an implementation pointer.
     /// Used by static constructor to resolve circular construction dependency.
     /// </summary>
-    workbook(detail::workbook_impl *impl);
+    workbook(std::shared_ptr<detail::workbook_impl> impl);
+
+    /// <summary>
+    /// Private constructor. Constructs a workbook from an implementation pointer.
+    /// Used by static constructor to resolve circular construction dependency.
+    /// </summary>
+    workbook(std::weak_ptr<detail::workbook_impl> impl);
+
+    /// <summary>
+    /// Internal function to set the impl.
+    /// </summary>
+    void set_impl(std::shared_ptr<detail::workbook_impl> impl);
+
+    /// <summary>
+    /// load the encrpyted xlsx file at path
+    /// </summary>
+    template <typename T>
+    void construct(const xlnt::path &file, const T &password);
+
+    /// <summary>
+    /// construct the workbook from any data stream where the data is the binary form of an encrypted workbook
+    /// </summary>
+    template <typename T>
+    void construct(std::istream &data, const T &password);
+
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and saves the bytes into byte vector data.
+    /// </summary>
+    template <typename T>
+    void save_internal(std::vector<std::uint8_t> &data, const T &password) const;
+
+    /// <summary>
+    /// Serializes the workbook into an XLSX file and saves the data into a file
+    /// named filename.
+    /// </summary>
+    template <typename T>
+    void save_internal(const T &filename) const;
+
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and loads the bytes into a file named filename.
+    /// </summary>
+    template <typename T>
+    void save_internal(const T &filename, const T &password) const;
+
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and loads the bytes into a file named filename.
+    /// </summary>
+    template <typename T>
+    void save_internal(const xlnt::path &filename, const T &password) const;
+
+    /// <summary>
+    /// Serializes the workbook into an XLSX file encrypted with the given password
+    /// and loads the bytes into the given stream.
+    /// </summary>
+    template <typename T>
+    void save_internal(std::ostream &stream, const T &password) const;
+
+    /// <summary>
+    /// Interprets byte vector data as an XLSX file encrypted with the
+    /// given password and sets the content of this workbook to match that file.
+    /// </summary>
+    template <typename T>
+    void load_internal(const std::vector<std::uint8_t> &data, const T &password);
+
+    /// <summary>
+    /// Interprets file with the given filename as an XLSX file and sets
+    /// the content of this workbook to match that file.
+    /// </summary>
+    template <typename T>
+    void load_internal(const T &filename);
+
+    /// <summary>
+    /// Interprets file with the given filename as an XLSX file encrypted with the
+    /// given password and sets the content of this workbook to match that file.
+    /// </summary>
+    template <typename T>
+    void load_internal(const T &filename, const T &password);
+
+    /// <summary>
+    /// Interprets file with the given filename as an XLSX file encrypted with the
+    /// given password and sets the content of this workbook to match that file.
+    /// </summary>
+    template <typename T>
+    void load_internal(const xlnt::path &filename, const T &password);
+
+    /// <summary>
+    /// Interprets data in stream as an XLSX file encrypted with the given password
+    /// and sets the content of this workbook to match that file.
+    /// </summary>
+    template <typename T>
+    void load_internal(std::istream &stream, const T &password);
 
     /// <summary>
     /// Returns a reference to the workbook implementation structure. Provides
@@ -926,7 +1150,7 @@ private:
     /// <summary>
     /// An opaque pointer to a structure that holds all of the data relating to this workbook.
     /// </summary>
-    std::unique_ptr<detail::workbook_impl> d_;
+    std::shared_ptr<detail::workbook_impl> d_;
 };
 
 } // namespace xlnt

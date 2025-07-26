@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,12 +28,14 @@
 
 #include <xlnt/styles/color.hpp>
 #include <xlnt/utils/exceptions.hpp>
+#include <detail/serialization/parsers.hpp>
 
 namespace {
 
 std::array<std::uint8_t, 4> decode_hex_string(const std::string &hex_string)
 {
-    auto x = std::strtoul(hex_string.c_str(), nullptr, 16);
+    unsigned int x = 0;
+    xlnt::detail::parse(hex_string, x, nullptr, 16);
 
     auto a = static_cast<std::uint8_t>(x >> 24);
     auto r = static_cast<std::uint8_t>((x >> 16) & 0xff);

@@ -1,4 +1,5 @@
-// Copyright (c) 2018 Thomas Fussell
+// Copyright (c) 2018-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -62,6 +63,11 @@ inline bool operator==(const sheet_format_properties &lhs, const sheet_format_pr
         && lhs.default_column_width == rhs.default_column_width
         && detail::float_equals(lhs.default_row_height, rhs.default_row_height)
         && lhs.dy_descent == rhs.dy_descent;
+}
+
+inline bool operator!=(const sheet_format_properties &lhs, const sheet_format_properties &rhs)
+{
+    return !(lhs == rhs);
 }
 
 } // namespace xlnt

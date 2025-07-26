@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +36,7 @@ namespace xlnt {
 /// <summary>
 /// Enumerates the possible types a cell can be determined by it's current value.
 /// </summary>
-enum class XLNT_API cell_type
+enum class cell_type
 {
     /// no value
     empty,

@@ -1,4 +1,5 @@
-// Copyright (c) 2016-2021 Thomas Fussell
+// Copyright (c) 2016-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +24,7 @@
 
 #pragma once
 
-#include <utility> // for std::hash
+#include <functional> // for std::hash
 
 namespace xlnt {
 

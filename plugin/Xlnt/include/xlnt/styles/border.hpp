@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +25,6 @@
 
 #pragma once
 
-#include <cstddef>
-#include <functional>
-#include <unordered_map>
 #include <vector>
 
 #include <xlnt/xlnt_config.hpp>
@@ -38,7 +36,7 @@ namespace xlnt {
 /// <summary>
 /// Enumerates the sides of a cell to which a border style can be applied.
 /// </summary>
-enum class XLNT_API border_side
+enum class border_side
 {
     start,
     end,
@@ -52,7 +50,7 @@ enum class XLNT_API border_side
 /// <summary>
 /// Enumerates the pattern of the border lines on a particular side.
 /// </summary>
-enum class XLNT_API border_style
+enum class border_style
 {
     none,
     dashdot,
@@ -75,7 +73,7 @@ enum class XLNT_API border_style
 /// or from the top-right to bottom-left, or both, or neither.
 /// Used by style->border.
 /// </summary>
-enum class XLNT_API diagonal_direction
+enum class diagonal_direction
 {
     neither,
     up,

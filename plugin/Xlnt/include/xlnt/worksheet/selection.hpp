@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,10 +24,14 @@
 
 #pragma once
 
+#include <vector>
+
 #include <xlnt/xlnt_config.hpp>
 #include <xlnt/cell/cell_reference.hpp>
 #include <xlnt/worksheet/pane.hpp>
 #include <xlnt/worksheet/range_reference.hpp>
+#include <xlnt/utils/exceptions.hpp>
+#include <xlnt/utils/optional.hpp>
 
 namespace xlnt {
 
@@ -46,7 +51,7 @@ public:
     /// sqref == active_cell
     /// </summary>
     explicit selection(pane_corner quadrant, cell_reference active_cell)
-        : active_cell_(active_cell), sqref_(range_reference(active_cell, active_cell)), pane_(quadrant)
+        : active_cell_(active_cell), sqref_({range_reference(active_cell, active_cell)}), pane_(quadrant)
     {
     }
 
@@ -55,7 +60,7 @@ public:
     /// sqref must contain active_cell
     /// </summary>
     explicit selection(pane_corner quadrant, cell_reference active_cell, range_reference selected)
-        : active_cell_(active_cell), sqref_(selected), pane_(quadrant)
+        : active_cell_(active_cell), sqref_({selected}), pane_(quadrant)
     {
     }
 
@@ -88,15 +93,31 @@ public:
     /// </summary>
     bool has_sqref() const
     {
-        return sqref_.is_set();
+        return !sqref_.empty();
+    }
+
+    /// <summary>
+    /// Returns the range encompassed by this selection.
+    /// If the range contains multiple (non-contiguous) regions, the first range is returned.
+    /// Use sqrefs to obtain the full selection.
+    /// </summary>
+    /// <deprecated>
+    /// Use sqrefs instead.
+    /// </deprecated>
+    XLNT_DEPRECATED range_reference sqref() const
+    {
+        if (!has_sqref())
+            throw invalid_attribute();
+
+        return sqref_.front();
     }
 
     /// <summary>
     /// Returns the range encompassed by this selection.
     /// </summary>
-    range_reference sqref() const
+    const std::vector<range_reference>& sqrefs() const
     {
-        return sqref_.get();
+        return sqref_;
     }
 
     /// <summary>
@@ -104,16 +125,23 @@ public:
     /// </summary>
     void sqref(const range_reference &ref)
     {
-        sqref_ = ref;
+        sqref_ = {ref};
     }
 
     /// <summary>
     /// Sets the range encompassed by this selection.
     /// </summary>
-    void sqref(const std::string &ref)
+    void sqref(const std::vector<range_reference> &ref)
     {
-        sqref(range_reference(ref));
+        sqref_ = ref;
     }
+
+    /// <summary>
+    /// Sets the range encompassed by this selection.
+    /// The provided range should be a space delimited list of range references.
+    /// E.g. "A1 B2:C3"
+    /// </summary>
+    void sqref(const std::string &ref);
 
     /// <summary>
     /// Returns the sheet quadrant of this selection.
@@ -142,6 +170,14 @@ public:
             && pane_ == rhs.pane_;
     }
 
+    // <summary>
+    /// Returns the negation of the equality operator.
+    /// </summary>
+    bool operator!=(const selection &rhs) const
+    {
+        return !(*this == rhs);
+    }
+
 private:
     /// <summary>
     /// The last selected cell in the selection
@@ -152,7 +188,7 @@ private:
     /// The last selected block in the selection
     /// contains active_cell_, normally == to active_cell_
     /// </summary>
-    optional<range_reference> sqref_;
+    std::vector<range_reference> sqref_;
 
     /// <summary>
     /// The corner of the worksheet that this selection extends to

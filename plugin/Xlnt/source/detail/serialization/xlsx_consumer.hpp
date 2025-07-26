@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +25,7 @@
 
 #pragma once
 
-#include <cstdint>
-#include <functional>
+#include <detail/xlnt_config_impl.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -34,7 +34,12 @@
 
 #include <detail/external/include_libstudxml.hpp>
 #include <detail/serialization/zstream.hpp>
-#include <xlnt/utils/numeric.hpp>
+#include <detail/serialization/serialisation_helpers.hpp>
+#include <xlnt/internal/features.hpp>
+
+#if XLNT_HAS_INCLUDE(<string_view>) && XLNT_HAS_FEATURE(U8_STRING_VIEW)
+  #include <string_view>
+#endif
 
 namespace xlnt {
 
@@ -62,7 +67,7 @@ struct worksheet_impl;
 /// <summary>
 /// Handles writing a workbook into an XLSX file.
 /// </summary>
-class xlsx_consumer
+class XLNT_API_INTERNAL xlsx_consumer
 {
 public:
 	xlsx_consumer(workbook &destination);
@@ -73,10 +78,20 @@ public:
 
 	void read(std::istream &source, const std::string &password);
 
+#if XLNT_HAS_FEATURE(U8_STRING_VIEW)
+	void read(std::istream &source, std::u8string_view password);
+#endif
+
+    // For unit testing purpose only
+    void read_stylesheet (const std::string& xml);
+
 private:
     friend class xlnt::streaming_workbook_reader;
 
     void open(std::istream &source);
+
+    template <typename T>
+    void read_internal(std::istream &source, const T &password);
 
     bool has_cell();
 
@@ -410,7 +425,7 @@ private:
 	/// scope and then calling a read_*() method which uses xlsx_consumer::parser()
 	/// to access the object.
 	/// </summary>
-	xml::parser *parser_;
+	xml::parser *parser_ = nullptr;
 
     std::vector<xml::qname> stack_;
 
@@ -419,13 +434,12 @@ private:
     bool streaming_ = false;
 
     std::unique_ptr<detail::cell_impl> streaming_cell_;
-    
+
     std::unordered_map<int, std::string> shared_formulae_;
     std::unordered_map<std::string, std::string> array_formulae_;
 
-    detail::worksheet_impl *current_worksheet_;
-    number_serialiser converter_;
-    
+    detail::worksheet_impl *current_worksheet_ = nullptr;
+
     std::vector<defined_name> defined_names_;
 };
 

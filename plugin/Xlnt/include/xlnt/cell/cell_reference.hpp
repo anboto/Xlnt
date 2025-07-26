@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +30,6 @@
 #include <cstdint>
 #include <functional>
 #include <string>
-#include <tuple>
 #include <utility>
 
 namespace xlnt {
@@ -248,12 +248,12 @@ private:
     /// <summary>
     /// True if the reference's row is absolute. This looks like "A$1" in Excel.
     /// </summary>
-    bool absolute_row_;
+    bool absolute_row_ = false;
 
     /// <summary>
     /// True if the reference's column is absolute. This looks like "$A1" in Excel.
     /// </summary>
-    bool absolute_column_;
+    bool absolute_column_ = false;
 };
 
 } // namespace xlnt

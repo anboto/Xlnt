@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +33,7 @@ namespace xlnt {
 /// <summary>
 /// Text can be aligned horizontally within a cell in these enumerated ways.
 /// </summary>
-enum class XLNT_API horizontal_alignment
+enum class horizontal_alignment
 {
     general,
     left,
@@ -47,7 +48,7 @@ enum class XLNT_API horizontal_alignment
 /// <summary>
 /// Text can be aligned vertically within a cell in these enumerated ways.
 /// </summary>
-enum class XLNT_API vertical_alignment
+enum class vertical_alignment
 {
     top,
     center,

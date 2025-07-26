@@ -1,5 +1,4 @@
-// Copyright (c) 2014-2021 Thomas Fussell
-// Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,23 +21,17 @@
 // @license: http://www.opensource.org/licenses/mit-license.php
 // @author: see AUTHORS file
 
-#include <xlnt/worksheet/worksheet.hpp>
-
-#include <detail/implementations/cell_impl.hpp>
+#include <xlnt/worksheet/selection.hpp>
+#include <detail/utils/string_helpers.hpp>
 
 namespace xlnt {
-namespace detail {
 
-cell_impl::cell_impl()
-    : type_(cell_type::empty),
-      parent_(nullptr),
-      column_(1),
-      row_(1),
-      is_merged_(false),
-      phonetics_visible_(false),
-      value_numeric_(0)
+// ref == ST_Sqref: a space delimited list of range references
+void selection::sqref(const std::string &ref)
 {
+    sqref_.clear();
+    for (const auto& range : detail::split_string(ref, ' '))
+        sqref_.push_back(range_reference(range));
 }
 
-} // namespace detail
 } // namespace xlnt

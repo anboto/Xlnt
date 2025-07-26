@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,12 +38,12 @@ namespace xlnt {
 struct XLNT_API time
 {
     /// <summary>
-    /// Return the current time according to the system time.
+    /// Returns the current time according to the system time.
     /// </summary>
     static time now();
 
     /// <summary>
-    /// Return a time from a number representing a fraction of a day.
+    /// Returns a time from a number representing a fraction of a day.
     /// The integer part of number will be ignored.
     /// 0.5 would return time(12, 0, 0, 0) or noon, halfway through the day.
     /// </summary>
@@ -55,6 +56,7 @@ struct XLNT_API time
 
     /// <summary>
     /// Constructs a time object from a string representing the time.
+    /// If the string could not be parsed correctly, an xlnt::invalid_parameter exception is thrown.
     /// </summary>
     explicit time(const std::string &time_string);
 
@@ -70,24 +72,29 @@ struct XLNT_API time
     bool operator==(const time &comparand) const;
 
     /// <summary>
+    /// Returns true if this time is different than comparand.
+    /// </summary>
+    bool operator!=(const time &comparand) const;
+
+    /// <summary>
     /// The hour
     /// </summary>
-    int hour;
+    int hour = 0;
 
     /// <summary>
     /// The minute
     /// </summary>
-    int minute;
+    int minute = 0;
 
     /// <summary>
     /// The second
     /// </summary>
-    int second;
+    int second = 0;
 
     /// <summary>
     /// The microsecond
     /// </summary>
-    int microsecond;
+    int microsecond = 0;
 };
 
 } // namespace xlnt

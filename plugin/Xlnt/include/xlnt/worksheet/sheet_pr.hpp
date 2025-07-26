@@ -1,4 +1,5 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -90,5 +91,10 @@ inline bool operator==(const sheet_pr &lhs, const sheet_pr &rhs)
         && lhs.code_name == rhs.code_name
         && lhs.filter_mode == rhs.filter_mode
         && lhs.enable_format_condition_calculation == rhs.enable_format_condition_calculation;
+}
+
+inline bool operator!=(const sheet_pr &lhs, const sheet_pr &rhs)
+{
+    return !(lhs == rhs);
 }
 } // namespace xlnt

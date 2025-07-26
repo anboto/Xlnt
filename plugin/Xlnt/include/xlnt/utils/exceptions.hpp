@@ -1,5 +1,6 @@
-// Copyright (c) 2014-2021 Thomas Fussell
+// Copyright (c) 2014-2022 Thomas Fussell
 // Copyright (c) 2010-2015 openpyxl
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +25,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include <stdexcept>
 
 #include <xlnt/xlnt_config.hpp>
@@ -63,7 +63,7 @@ public:
     /// <summary>
     /// Gets the message containing extra information.
     /// </summary>
-    std::string message();
+    const std::string & message();
 
 private:
     /// <summary>
@@ -81,7 +81,7 @@ public:
     /// <summary>
     /// Default constructor.
     /// </summary>
-    invalid_parameter();
+    explicit invalid_parameter(const char *optional_message = nullptr);
 
     /// <summary>
     /// Default copy constructor.
@@ -240,9 +240,9 @@ class XLNT_API invalid_attribute : public exception
 {
 public:
     /// <summary>
-    /// Default constructor.
+    /// Constructor.
     /// </summary>
-    invalid_attribute();
+    explicit invalid_attribute(const char *optional_message = nullptr);
 
     /// <summary>
     /// Default copy constructor.

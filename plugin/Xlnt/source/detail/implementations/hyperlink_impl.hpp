@@ -1,4 +1,5 @@
-// Copyright (c) 2018 Thomas Fussell
+// Copyright (c) 2018-2022 Thomas Fussell
+// Copyright (c) 2024-2025 xlnt-community
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,6 +46,11 @@ inline bool operator==(const hyperlink_impl &lhs, const hyperlink_impl &rhs)
     return lhs.relationship == rhs.relationship
         && lhs.tooltip == rhs.tooltip
         && lhs.display == rhs.display;
+}
+
+inline bool operator!=(const hyperlink_impl &lhs, const hyperlink_impl &rhs)
+{
+    return !(lhs == rhs);
 }
 
 } // namespace detail

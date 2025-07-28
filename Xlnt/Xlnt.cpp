@@ -37,7 +37,7 @@ void XlsxFill(xlnt::worksheet &ws, const Grid &g, bool removeEmpty) {
 			printRow = false;
 			for (int c = 0; c < g.cols(); ++c) {
 				if (!IsNull(g.Get(r, c))) {
-					printRow = true;	
+					printRow = true;
 					break;
 				}
 			}

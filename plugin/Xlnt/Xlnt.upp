@@ -1,6 +1,4 @@
-description "Xlnt is library for reading/writing XLSX files\377";
-
-noblitz;
+description "Xlnt is library for reading/writing XLSX files\37744,169,203";
 
 options(BUILDER_OPTION) NOWARNINGS;
 
@@ -13,10 +11,12 @@ options
 
 options(MSC) /utf-8;
 
+options(CLANG & PEDANTIC) "-Wall -Wextra -Wunused-parameter -Wlogical-op-parentheses -Wdeprecated-copy-with-user-provided-copy -Woverloaded-virtual -Wmissing-braces -Wshadow -Wimplicit-fallthrough -Wsign-conversion -Wformat=2";
+
 include
 	include,
-	third-party\libstudxml,
 	source,
+	third-party\libstudxml,
 	third-party\utfcpp,
 	third-party\miniz,
 	third-party/fast_float/include,

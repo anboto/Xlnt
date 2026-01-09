@@ -30,7 +30,7 @@ DEALINGS IN THE SOFTWARE.
 
 #include "core.h"
 
-namespace utf8
+namespace utf8__
 {
     namespace unchecked
     {
@@ -62,27 +62,27 @@ namespace utf8
         {
             while (start != end) {
                 octet_iterator sequence_start = start;
-                internal::utf_error err_code = utf8::internal::validate_next(start, end);
+                internal::utf_error err_code = utf8__::internal::validate_next(start, end);
                 switch (err_code) {
                     case internal::UTF8_OK :
                         for (octet_iterator it = sequence_start; it != start; ++it)
                             *out++ = *it;
                         break;
                     case internal::NOT_ENOUGH_ROOM:
-                        out = utf8::unchecked::append (replacement, out);
+                        out = utf8__::unchecked::append (replacement, out);
                         start = end;
                         break;
                     case internal::INVALID_LEAD:
-                        out = utf8::unchecked::append (replacement, out);
+                        out = utf8__::unchecked::append (replacement, out);
                         ++start;
                         break;
                     case internal::INCOMPLETE_SEQUENCE:
                     case internal::OVERLONG_SEQUENCE:
                     case internal::INVALID_CODE_POINT:
-                        out = utf8::unchecked::append (replacement, out);
+                        out = utf8__::unchecked::append (replacement, out);
                         ++start;
                         // just one replacement mark for the sequence
-                        while (start != end && utf8::internal::is_trail(*start))
+                        while (start != end && utf8__::internal::is_trail(*start))
                             ++start;
                         break;
                 }
@@ -93,15 +93,15 @@ namespace utf8
         template <typename octet_iterator, typename output_iterator>
         inline output_iterator replace_invalid(octet_iterator start, octet_iterator end, output_iterator out)
         {
-            static const uint32_t replacement_marker = utf8::internal::mask16(0xfffd);
-            return utf8::unchecked::replace_invalid(start, end, out, replacement_marker);
+            static const uint32_t replacement_marker = utf8__::internal::mask16(0xfffd);
+            return utf8__::unchecked::replace_invalid(start, end, out, replacement_marker);
         }
 
         template <typename octet_iterator>
         uint32_t next(octet_iterator& it)
         {
-            uint32_t cp = utf8::internal::mask8(*it);
-            typename std::iterator_traits<octet_iterator>::difference_type length = utf8::internal::sequence_length(it);
+            uint32_t cp = utf8__::internal::mask8(*it);
+            typename std::iterator_traits<octet_iterator>::difference_type length = utf8__::internal::sequence_length(it);
             switch (length) {
                 case 1:
                     break;
@@ -111,15 +111,15 @@ namespace utf8
                     break;
                 case 3:
                     ++it; 
-                    cp = ((cp << 12) & 0xffff) + ((utf8::internal::mask8(*it) << 6) & 0xfff);
+                    cp = ((cp << 12) & 0xffff) + ((utf8__::internal::mask8(*it) << 6) & 0xfff);
                     ++it;
                     cp += (*it) & 0x3f;
                     break;
                 case 4:
                     ++it;
-                    cp = ((cp << 18) & 0x1fffff) + ((utf8::internal::mask8(*it) << 12) & 0x3ffff);                
+                    cp = ((cp << 18) & 0x1fffff) + ((utf8__::internal::mask8(*it) << 12) & 0x3ffff);                
                     ++it;
-                    cp += (utf8::internal::mask8(*it) << 6) & 0xfff;
+                    cp += (utf8__::internal::mask8(*it) << 6) & 0xfff;
                     ++it;
                     cp += (*it) & 0x3f; 
                     break;
@@ -131,15 +131,15 @@ namespace utf8
         template <typename octet_iterator>
         uint32_t peek_next(octet_iterator it)
         {
-            return utf8::unchecked::next(it);
+            return utf8__::unchecked::next(it);
         }
 
         template <typename octet_iterator>
         uint32_t prior(octet_iterator& it)
         {
-            while (utf8::internal::is_trail(*(--it))) ;
+            while (utf8__::internal::is_trail(*(--it))) ;
             octet_iterator temp = it;
-            return utf8::unchecked::next(temp);
+            return utf8__::unchecked::next(temp);
         }
 
         template <typename octet_iterator, typename distance_type>
@@ -149,11 +149,11 @@ namespace utf8
             if (n < zero) {
                 // backward
                 for (distance_type i = n; i < zero; ++i)
-                    utf8::unchecked::prior(it);
+                    utf8__::unchecked::prior(it);
             } else {
                 // forward
                 for (distance_type i = zero; i < n; ++i)
-                    utf8::unchecked::next(it);
+                    utf8__::unchecked::next(it);
             }
         }
 
@@ -163,7 +163,7 @@ namespace utf8
         {
             typename std::iterator_traits<octet_iterator>::difference_type dist;
             for (dist = 0; first < last; ++dist) 
-                utf8::unchecked::next(first);
+                utf8__::unchecked::next(first);
             return dist;
         }
 
@@ -171,13 +171,13 @@ namespace utf8
         octet_iterator utf16to8 (u16bit_iterator start, u16bit_iterator end, octet_iterator result)
         {
             while (start != end) {
-                uint32_t cp = utf8::internal::mask16(*start++);
+                uint32_t cp = utf8__::internal::mask16(*start++);
             // Take care of surrogate pairs first
-                if (utf8::internal::is_lead_surrogate(cp)) {
-                    uint32_t trail_surrogate = utf8::internal::mask16(*start++);
+                if (utf8__::internal::is_lead_surrogate(cp)) {
+                    uint32_t trail_surrogate = utf8__::internal::mask16(*start++);
                     cp = (cp << 10) + trail_surrogate + internal::SURROGATE_OFFSET;
                 }
-                result = utf8::unchecked::append(cp, result);
+                result = utf8__::unchecked::append(cp, result);
             }
             return result;
         }
@@ -186,7 +186,7 @@ namespace utf8
         u16bit_iterator utf8to16 (octet_iterator start, octet_iterator end, u16bit_iterator result)
         {
             while (start < end) {
-                uint32_t cp = utf8::unchecked::next(start);
+                uint32_t cp = utf8__::unchecked::next(start);
                 if (cp > 0xffff) { //make a surrogate pair
                     *result++ = static_cast<uint16_t>((cp >> 10)   + internal::LEAD_OFFSET);
                     *result++ = static_cast<uint16_t>((cp & 0x3ff) + internal::TRAIL_SURROGATE_MIN);
@@ -201,7 +201,7 @@ namespace utf8
         octet_iterator utf32to8 (u32bit_iterator start, u32bit_iterator end, octet_iterator result)
         {
             while (start != end)
-                result = utf8::unchecked::append(*(start++), result);
+                result = utf8__::unchecked::append(*(start++), result);
 
             return result;
         }
@@ -210,7 +210,7 @@ namespace utf8
         u32bit_iterator utf8to32 (octet_iterator start, octet_iterator end, u32bit_iterator result)
         {
             while (start < end)
-                (*result++) = utf8::unchecked::next(start);
+                (*result++) = utf8__::unchecked::next(start);
 
             return result;
         }
@@ -227,7 +227,7 @@ namespace utf8
             uint32_t operator * () const
             {
                 octet_iterator temp = it;
-                return utf8::unchecked::next(temp);
+                return utf8__::unchecked::next(temp);
             }
             bool operator == (const iterator& rhs) const 
             { 
@@ -239,24 +239,24 @@ namespace utf8
             }
             iterator& operator ++ () 
             {
-                ::std::advance(it, utf8::internal::sequence_length(it));
+                ::std::advance(it, utf8__::internal::sequence_length(it));
                 return *this;
             }
             iterator operator ++ (int)
             {
                 iterator temp = *this;
-                ::std::advance(it, utf8::internal::sequence_length(it));
+                ::std::advance(it, utf8__::internal::sequence_length(it));
                 return temp;
             }  
             iterator& operator -- ()
             {
-                utf8::unchecked::prior(it);
+                utf8__::unchecked::prior(it);
                 return *this;
             }
             iterator operator -- (int)
             {
                 iterator temp = *this;
-                utf8::unchecked::prior(it);
+                utf8__::unchecked::prior(it);
                 return temp;
             }
           }; // class iterator

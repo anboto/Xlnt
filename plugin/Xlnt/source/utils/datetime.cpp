@@ -106,7 +106,7 @@ std::string datetime::to_string() const
         if (microsecond != 0)
         {
             str.push_back('.');
-            str.append(fill(std::to_string(microsecond), 6));
+            str.append(::fill(std::to_string(microsecond), 6));
         }
 
         return str;
@@ -294,20 +294,20 @@ std::string datetime::to_iso_string() const
     {
         std::string iso = std::to_string(year);
         iso.push_back('-');
-        iso.append(fill(std::to_string(month)));
+        iso.append(::fill(std::to_string(month)));
         iso.push_back('-');
-        iso.append(fill(std::to_string(day)));
+        iso.append(::fill(std::to_string(day)));
         iso.push_back('T');
-        iso.append(fill(std::to_string(hour)));
+        iso.append(::fill(std::to_string(hour)));
         iso.push_back(':');
-        iso.append(fill(std::to_string(minute)));
+        iso.append(::fill(std::to_string(minute)));
         iso.push_back(':');
-        iso.append(fill(std::to_string(second)));
+        iso.append(::fill(std::to_string(second)));
 
         if (microsecond != 0)
         {
             iso.push_back('.');
-            iso.append(fill(std::to_string(microsecond), 6));
+            iso.append(::fill(std::to_string(microsecond), 6));
         }
 
         iso.push_back('Z');

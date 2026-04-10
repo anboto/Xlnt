@@ -50,7 +50,7 @@ CONSOLE_APP_MAIN
 		        const Vector<double> &row = data[r];
 		        for (int c = 0; c < row.size(); c++)
 				    ws.cell(xlnt::cell_reference(c + 1, r + 2)).value(row[c]);
-		        ws.cell(xlnt::cell_reference(row.size() + 1, r + 2)).formula(~Format("=SUM(%s:%s)", GetCell(1, r+2), GetCell(row.size(), r+2)));
+		        ws.cell(xlnt::cell_reference(row.size() + 1, r + 2)).formula(~F("=SUM(%s:%s)", GetCell(1, r+2), GetCell(row.size(), r+2)));
 		    }
 			
 		    wb.save(~file); 
@@ -67,7 +67,7 @@ CONSOLE_APP_MAIN
         		}
 		}
 	} catch (Exc err) {
-		UppLog() << "\n" << Format(t_("Problem found: %s"), err);
+		UppLog() << "\n" << F(t_("Problem found: %s"), err);
 		SetExitCode(-1);
 	} catch (...) {
 		UppLog() << "\n" << t_("Problem found");

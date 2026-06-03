@@ -27,7 +27,8 @@
 #pragma clang diagnostic ignored "-Wweak-vtables"
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #pragma clang diagnostic ignored "-Wsuggest-override"
-#include <utf8.h>
+//#include <utf8.h>    //<--- comment this one
+#include <plugin/Xlnt/third-party/utfcpp/utf8.h>  //<---- new include
 #pragma clang diagnostic pop
 
 #include <xlnt/utils/exceptions.hpp>
